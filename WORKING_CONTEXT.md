@@ -258,6 +258,49 @@ Modificar plantillas AGENTS antes de expandir esta convención a más repos.
 - Mapa o salida a Google Maps
 - Alertas avanzadas
 - Filtros complejos
+
+---
+
+## Festapp handoff 2026-03-20 Cierre real del vertical CMS de actos
+
+### Problema raiz resuelto
+
+- El CMS de actos estaba interpretando las relaciones anidadas de Supabase como arrays (`relation?.[0]`) cuando en este proyecto estaban llegando como objeto.
+- Ese supuesto roto anulaba `edition`, `festival` y `location` en actos validos.
+- Consecuencia directa:
+  - el listado mostraba contexto editorial vacio
+  - algunas fichas devolvian `No se ha podido resolver el festival asociado a este acto`
+  - la carga de locations validas quedaba bloqueada por un falso error de resolucion
+
+### Hecho
+
+- `lib/cms/queries.ts` ahora normaliza relaciones anidadas aceptando tanto objeto como array con `unwrapRelation()`.
+- `/cms/actos` vuelve a mostrar festival y edicion correctos para actos reales del seed en ambos festivales demo.
+- `/cms/actos/:eventId` carga correctamente fichas reales y resuelve las `locations` del festival asociado.
+- El listado queda mas operativo sin rediseño:
+  - orden estable por `starts_at` y `title`
+  - resumen superior con numero de actos
+  - mensaje explicito `Contexto editorial no resuelto` si algun dato futuro viniera realmente roto
+- Se ha validado en navegador con Supabase real:
+  - login `admin`
+  - login `editor`
+  - apertura de fichas reales de `Moros y Cristianos` y `Feria de Primavera`
+  - guardado real en CMS
+  - revalidacion visible en el front publico para un acto `updated`
+- `npm run lint`, `npm run typecheck` y `npm run build` siguen pasando.
+
+### Pendiente inmediato
+
+- Ninguno dentro de este vertical salvo bugs reales encontrados en uso.
+
+### Riesgos abiertos
+
+- Los errores de consola vistos en Playwright durante `npm run dev` siguen siendo ruido de desarrollo de Next/HMR, no un fallo funcional del vertical.
+- Si en el futuro entra un acto con integridad editorial realmente rota en base de datos, el CMS ya lo mostrara como dato invalido, pero no lo corrige automaticamente.
+
+### Siguiente paso recomendado
+
+- Mantener cerrado el vertical CMS de actos y no ampliarlo salvo correcciones puntuales o cambios de producto expresos.
 - CRUD publico o interno nuevo
 
 ### Validacion hecha
@@ -269,6 +312,133 @@ Modificar plantillas AGENTS antes de expandir esta convención a más repos.
   - `/` redirige a `/:festivalSlug/:editionSlug`
   - `/:festivalSlug/:editionSlug` carga contenido real
   - `/:festivalSlug/:editionSlug/agenda` lista actos reales
+
+---
+
+## Festapp handoff 2026-03-20 Reordenacion estructural del CMS
+
+### Problema resuelto
+
+- El CMS habia crecido como suma de pantallas sueltas:
+  - `/cms/actos`
+  - `/cms/catalogo`
+  - `/cms/alertas`
+- Aunque actos ya funcionaba, el flujo editorial seguia sin reflejar el dominio real `festival -> edicion -> actos`.
+- Eso hacia que el mantenimiento de contenido se sintiera disperso y que el editor de actos viviera aislado del contexto donde realmente se decide el trabajo.
+
+### Hecho
+
+- La navegacion del CMS ahora se centra en:
+  - `/cms`
+  - `/cms/festivales`
+  - `/cms/ediciones`
+- Existen rutas operativas nuevas para recorrer el arbol editorial:
+  - `/cms/festivales/:festivalId`
+  - `/cms/ediciones/:editionId`
+  - `/cms/ediciones/:editionId/actos`
+  - `/cms/actos/:eventId`
+- El listado real de actos no se ha rehecho:
+  - se ha extraido a componente reutilizable
+  - ahora vive dentro de `/cms/ediciones/:editionId/actos`
+- La ficha de acto mantiene guardado y contexto, pero deja de volver a un listado global aislado y pasa a enlazar con su edicion y sus actos.
+- Las rutas antiguas se reconducen para no competir con el flujo nuevo:
+  - `/cms/actos` redirige a `/cms/ediciones`
+  - `/cms/catalogo` redirige a `/cms/festivales`
+  - `/cms/alertas` redirige a `/cms`
+- El guardado del acto revalida tambien las nuevas rutas editoriales de festival y edicion.
+
+### Fuera de alcance deliberadamente
+
+- CRUD completo de festivales
+- CRUD completo de ediciones
+- alertas operativas de CMS
+- media library
+- acciones masivas
+- analitica
+- usuarios internos
+
+### Validacion hecha
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run build`
+- Smoke manual en navegador con Supabase real:
+  - `/cms`
+  - `/cms/festivales`
+  - `/cms/festivales/:festivalId`
+  - `/cms/ediciones/:editionId`
+  - `/cms/ediciones/:editionId/actos`
+  - `/cms/actos/:eventId`
+  - redireccion real de `/cms/actos` a `/cms/ediciones`
+  - redireccion real de `/cms/catalogo` a `/cms/festivales`
+
+### Siguiente paso recomendado
+
+- Mantener esta estructura como base del CMS y abrir futuras capacidades siempre dentro del arbol editorial, no como verticales sueltos.
+
+---
+
+## Festapp handoff 2026-03-20 Cierre del flujo minimo festival -> edicion -> actos
+
+### Problema resuelto
+
+- La reordenacion estructural del CMS ya daba contexto, pero aun no habia operacion real sobre el dominio base:
+  - el festival no se podia editar
+  - la edicion no se podia editar ni crear dentro del festival
+  - el acto no se podia crear desde la edicion
+- Eso hacia que el CMS siguiera siendo, en la practica, navegacion mas ficha de acto, pero no un flujo editorial completo.
+
+### Hecho
+
+- El festival ya tiene ficha editable minima en `/cms/festivales/:festivalId`:
+  - nombre
+  - ciudad
+  - zona horaria por defecto
+  - estado
+  - descripcion breve
+- La edicion ya se opera subordinada al festival:
+  - se crea desde `/cms/festivales/:festivalId`
+  - se edita en `/cms/ediciones/:editionId`
+  - el acceso transversal `/cms/ediciones` se mantiene, pero pasa a ser secundario y ya no vive en la navegacion principal
+- El acto ya nace desde la edicion con `/cms/ediciones/:editionId/actos/nuevo`.
+- La ficha de acto sigue reutilizando el guardado existente y queda integrada como ultimo paso del arbol editorial.
+- Se ha reforzado el naming editorial para dar mas peso al festival:
+  - ejemplo real: `Moros y Cristianos de Alcoy - 2026`
+- Se han reforzado CTAs criticos con botones de mejor contraste en festival, edicion y actos.
+- Las rutas legacy siguen reconducidas para no reabrir dispersión:
+  - `/cms/actos` -> `/cms/ediciones`
+  - `/cms/catalogo` -> `/cms/festivales`
+  - `/cms/alertas` -> `/cms`
+
+### Permisos y alcance real
+
+- Edicion y creacion de festivales/ediciones quedan solo para `admin`, alineado con las policies actuales.
+- Creacion y edicion de actos siguen disponibles dentro del flujo editorial ya existente para usuarios internos del CMS.
+
+### Validacion hecha
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run build`
+- Smoke manual en navegador con Supabase real:
+  - guardar un festival real
+  - guardar una edicion real subordinada a su festival
+  - crear un acto desde una edicion y llegar a su ficha
+  - validar despues la limpieza de los datos de prueba creados para no dejar ruido en el dataset
+
+### Fuera de alcance deliberadamente
+
+- alertas CMS operativas
+- media library
+- editor rico
+- acciones masivas
+- analitica
+- usuarios internos nuevos
+- borrado completo de entidades desde UI
+
+### Siguiente paso recomendado
+
+- Mantener cerrado este baseline operativo del CMS y abrir solo mejoras que sigan respetando el flujo principal `festival -> edicion -> actos`.
 
 ---
 
@@ -493,3 +663,428 @@ Modificar plantillas AGENTS antes de expandir esta convención a más repos.
 ### Siguiente paso recomendado
 
 - Mantener esta capa de visibilidad de cambios como baseline suficiente hasta que llegue una fase especifica de alertas o push.
+
+---
+
+## Festapp handoff 2026-03-20 Vertical CMS de actos
+
+### Hecho
+
+- `/cms/actos` deja de ser solo lectura tecnica y pasa a ser un listado operativo de actos reales.
+- Existe ya una ficha simple por acto en `/cms/actos/:eventId`.
+- La ficha permite editar los campos clave que ya afectan al front publico:
+  - `title`
+  - `slug`
+  - `starts_at`
+  - `status`
+  - `review_status`
+  - `short_description`
+  - `change_note`
+  - `location_id`
+  - `location_pending`
+- La ficha muestra contexto minimo de operacion:
+  - festival
+  - edicion
+  - estado actual
+  - publicacion actual
+  - enlaces al front publico
+- El guardado usa Supabase real con las policies actuales de `events`, valido tanto para `admin` como para `editor`.
+- Al guardar se revalida:
+  - `/cms`
+  - `/cms/actos`
+  - ficha CMS del acto
+  - `/`
+  - resumen de edicion
+  - agenda
+  - detalle publico del acto
+- Se ha actualizado el copy del CMS para no seguir diciendo que no habia CRUD operativo en actos.
+
+### Fuera de alcance deliberadamente
+
+- gestion completa de festivales o ediciones
+- media library
+- editor rico
+- acciones masivas
+- vertical de alertas
+- usuarios internos
+- analitica
+
+### Validacion hecha
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run build`
+
+### Siguiente paso recomendado
+
+- Mantener este vertical de actos como base editorial y abrir despues solo el siguiente slice operativo realmente necesario del CMS.
+
+---
+
+## Festapp handoff 2026-03-20 Refinado operativo CMS festival -> edicion -> actos
+
+### Hecho
+
+- Se ha corregido el bug real de alta de ediciones que acababa en `editions_check`:
+  - ahora se valida en servidor que `ends_on >= starts_on`
+  - el usuario ve el error comprensible `La fecha de fin no puede quedar antes de la fecha de inicio.`
+  - el mismo control se aplica tambien al guardado de una edicion existente
+- Se ha cerrado un caso operativo adicional:
+  - si se intenta marcar una edicion como actual y el alta o guardado falla, se restaura la edicion actual previa para no dejar el festival sin referencia actual
+- Se ha introducido el patron `vista/contexto + boton Editar + panel lateral` para entidades existentes:
+  - `/cms/festivales/:festivalId`
+  - `/cms/ediciones/:editionId`
+- La creacion sigue como accion primaria visible:
+  - `Nuevo festival` en `/cms/festivales`
+  - `Nueva edicion` dentro del festival
+  - `Nuevo acto` dentro de la edicion
+- Se ha anadido la ruta dedicada de alta `/cms/festivales/nuevo`.
+- Se han reforzado CTAs criticos para legibilidad y contraste:
+  - botones oscuros con texto blanco en acciones primarias
+  - enlaces publicos del CMS de edicion pasan a botones legibles
+- Se ha ajustado el home CMS para que el paso principal ya no enlace a `/cms/ediciones` como si fuera el flujo principal.
+- Se ha cerrado una fuga de permisos en la UX:
+  - `editor` ya no ve el CTA `Nueva edicion` en la ficha del festival
+  - `Nuevo festival` sigue visible solo para `admin`
+
+### Validacion hecha
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run build`
+- Validacion en navegador con Supabase real usando Playwright CLI:
+  - login `admin`
+  - `/cms/festivales` muestra `Nuevo festival`
+  - `/cms/festivales/:festivalId` ya no abre el formulario por defecto y muestra `Editar festival` + `Nueva edicion`
+  - el drawer de festival abre y guarda correctamente; el cambio de prueba en `short_description` se revirtio
+  - la alta de edicion con fin anterior al inicio devuelve el error esperado y no rompe la pantalla
+  - `/cms/ediciones/:editionId` ya no abre el formulario por defecto y muestra `Editar edicion` + `Nuevo acto`
+  - el drawer de edicion abre y guarda correctamente; el cambio de prueba en el nombre se revirtio
+  - `/cms/festivales/nuevo` carga el formulario dedicado de alta
+  - login `editor`
+  - `editor` no ve `Nuevo festival` en `/cms/festivales`
+  - `editor` no ve CTAs de alta/edicion de festival que no puede usar
+
+### Fuera de alcance deliberadamente
+
+- media library
+- alertas operativas
+- analitica
+- acciones masivas
+- rediseño visual profundo del CMS
+
+### Siguiente paso recomendado
+
+- Mantener el trabajo siguiente dentro del mismo arbol editorial y evitar volver a incrustar formularios persistentes de edicion en fichas existentes.
+
+---
+
+## Festapp handoff 2026-03-20 Base UI CMS y alta dedicada de edicion
+
+### Hecho
+
+- Se ha introducido una capa base `components/ui` de estilo shadcn-like para estabilizar los controles criticos del CMS:
+  - `Button`
+  - `Input`
+  - `Textarea`
+  - `Select`
+  - `Checkbox`
+  - `Card`
+  - `Badge`
+- `SectionCard` ya se apoya en la nueva base `Card`.
+- La causa raiz del bug visual era la ausencia de una capa comun de variantes:
+  - habia demasiadas clases hardcodeadas por pantalla
+  - los CTAs dependian de combinaciones locales de `bg-*` y `text-*`
+  - eso hacia facil acabar con foreground/background incoherentes al tocar una pantalla concreta
+- Ahora los CTAs principales del CMS usan `buttonVariants()` en vez de repetir clases manuales:
+  - `Nuevo festival`
+  - `Nueva edicion`
+  - `Editar festival`
+  - `Editar edicion`
+  - `Ver actos`
+  - `Crear edicion`
+  - `Crear acto`
+  - `Guardar festival`
+  - `Guardar edicion`
+  - `Guardar cambios`
+- La ficha de festival ya no contiene el formulario de alta de edicion.
+- `Nueva edicion` sale ahora a una ruta dedicada:
+  - `/cms/festivales/:festivalId/ediciones/nueva`
+- La accion `createEditionAction` ya redirige los errores de validacion a esa nueva ruta dedicada, no de vuelta a la ficha del festival.
+- El patron queda asi:
+  - festival existente = vista + editar en panel lateral
+  - edicion existente = vista + editar en panel lateral
+  - nuevo festival = pagina dedicada
+  - nueva edicion = pagina dedicada
+  - nuevo acto = pagina dedicada
+
+### Validacion hecha
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run build`
+- Validacion en navegador con Supabase real usando Playwright CLI:
+  - `admin`:
+    - la ficha de festival ya no muestra el alta de edicion incrustada
+    - `Nueva edicion` navega a `/cms/festivales/1203285d-fdea-4abc-8123-97f4ce0c0eeb/ediciones/nueva`
+    - la pantalla dedicada muestra el formulario principal de alta
+    - un error real de fechas invalidas se queda en esa misma ruta dedicada con mensaje claro
+  - `editor`:
+    - no ve CTAs de alta/edicion de festival que no puede usar
+- La ruta nueva aparece en build:
+  - `/cms/festivales/[festivalId]/ediciones/nueva`
+
+### Fuera de alcance deliberadamente
+
+- rediseño profundo del CMS
+- alertas operativas
+- media library
+- analitica
+- acciones masivas
+
+### Siguiente paso recomendado
+
+- Mantener cualquier ajuste futuro del CMS sobre esta capa `components/ui` y evitar volver a mezclar CTAs criticos con clases manuales por pantalla.
+
+---
+
+## Festapp handoff 2026-03-20 Foundation de design system para migracion progresiva
+
+### Hecho
+
+- Se ha formalizado una foundation real de design system en `app/globals.css` con tres capas de tokens:
+  - primitive tokens
+  - semantic tokens
+  - component tokens
+- La base visual inicial queda orientada a Festapp como UI sobria, funcional y premium ligera:
+  - superficies calidas
+  - contraste estable
+  - densidad controlada
+  - estados interactivos coherentes
+- La arquitectura de componentes queda separada asi:
+  - `components/ui` = primitives inspiradas en shadcn/ui
+  - `components/shared` = themed components de Festapp
+  - `components/cms` y `components/public` = componentes de dominio
+- Se han consolidado o introducido los primitives criticos:
+  - `Button`
+  - `Input`
+  - `Textarea`
+  - `Select`
+  - `Checkbox`
+  - `Label`
+  - `Card`
+  - `Badge`
+  - `Drawer`
+  - `Table`
+- `CmsSidePanel` ya se apoya en la base `Drawer`.
+- `SectionCard` ya se apoya en la base `Card`.
+- El listado de actos del CMS ya usa `Badge` para estados relevantes.
+- La migracion minima de prueba se ha aplicado a las zonas mas sensibles del CMS:
+  - CTAs principales
+  - formularios de festival, edicion y acto
+  - estados editoriales
+  - panel lateral de edicion
+- Se ha añadido documentacion tecnica breve en:
+  - `docs/design-system/foundation.md`
+
+### Causa raiz consolidada
+
+- El problema real no era un solo boton roto, sino la ausencia de una capa comun de variantes y semantica visual.
+- Los CTAs criticos dependian de clases locales por pantalla y de combinaciones manuales de `bg-*`, `text-*` y `hover:*`.
+- Eso hacia facil introducir foreground/background inconsistentes y muy dificil ajustar contraste o densidad de forma centralizada.
+- La nueva base desplaza esos ajustes a tokens y variantes compartidas.
+
+### Validacion hecha
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run build`
+
+### Fuera de alcance deliberadamente
+
+- migracion masiva de toda la app publica
+- storybook
+- tematizacion avanzada con multiples skins
+- rediseño completo del CMS o del catalogo publico
+
+### Siguiente paso recomendado
+
+- Continuar futuras migraciones pantalla a pantalla sobre `components/ui` y `components/shared`, evitando volver a introducir variantes visuales locales para controles criticos.
+
+---
+
+## Festapp handoff 2026-03-20 Segunda pasada de consolidacion del design system
+
+### Hecho
+
+- Se ha simplificado la jerarquia de tokens en `app/globals.css`:
+  - se mantienen `primitive tokens`
+  - se mantienen `semantic tokens`
+  - se eliminan `component tokens` redundantes que solo duplicaban semantica ya existente
+- Los primitives quedan con contratos mas claros:
+  - `Input`, `Textarea` y `Select` comparten `controlBaseClassName`
+  - `Checkbox` ya no acepta `type` ambiguo
+  - `Card`, `Drawer`, `Table`, `Label` y `Badge` usan semantica comun en vez de colores hardcodeados
+  - `Button.link` pasa a usar el tono de accion textual comun del sistema
+- La frontera entre capas queda mas nitida:
+  - `components/ui` conserva primitives base
+  - `components/shared` gana solo patrones realmente repetidos y con responsabilidad clara:
+    - `Callout`
+    - `InfoTile`
+    - `FormField`
+    - `CheckboxField`
+  - `components/cms` sigue conteniendo composicion de dominio
+- Se ha pulido la consistencia visual del CMS ya migrado:
+  - formularios con labels, hints y toggles alineados
+  - bloques de contexto y metricas unificados
+  - mensajes operativos sobre `Callout`
+  - mejor consistencia de alturas y foco en controles
+  - menos mezcla de clases locales para cajas y estados
+- Se ha ampliado `docs/design-system/foundation.md` para convertirlo en guia operativa real:
+  - cuando tocar tokens
+  - cuando tocar primitives
+  - cuando crear shared components
+  - que evitar
+  - deuda tecnica breve y priorizada
+
+### Validacion hecha
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run build`
+
+### Deuda abierta deliberadamente
+
+- `P1` Migrar login y algunos controles publicos a la misma foundation
+- `P1` Reducir colores inline que aun quedan en catalogo publico
+- `P2` Revalidar si `Table` necesita una primera adopcion real o puede esperar
+- `P2` Consolidar un patron shared de empty state solo si aparece un tercer caso claro
+
+### Siguiente paso recomendado
+
+- Mantener futuras migraciones sobre esta base y no volver a introducir wrappers de pantalla cuando el problema real sea de token, primitive o patron shared repetido.
+
+---
+
+## Festapp handoff 2026-03-20 Correccion visual del CMS y CTA operativos
+
+### Hecho
+
+- Se ha corregido el output visual real del CMS en las vistas prioritarias:
+  - `/cms`
+  - `/cms/festivales`
+  - `/cms/festivales/nuevo`
+  - `/cms/festivales/:festivalId`
+  - `/cms/ediciones/:editionId`
+- `Button` vuelve a tener jerarquia visual util:
+  - `default` como CTA principal legible y con peso real
+  - `outline` como accion secundaria visible
+  - `ghost` para navegacion contextual sobre fondo oscuro
+  - `link` como accion textual de apoyo
+- Se ha ajustado el uso de variantes en festival y edicion:
+  - en festival, `Nueva edicion` pasa a primaria y `Editar festival` queda secundaria
+  - en edicion, `Nuevo acto` queda primario en cabecera y `Editar edicion` secundario
+  - en el bloque de programa, `Entrar a actos` queda primario y el resto baja de jerarquia
+- Se han diferenciado mejor superficies:
+  - `InfoTile` sigue como bloque de contexto o metrica
+  - los listados navegables pasan a `surface-strong` con borde y sombra ligera
+- La cabecera del CMS ya usa navegacion y signout visibles sobre fondo oscuro.
+
+### Problema raiz corregido
+
+- El bug mas grave de los CTAs no era solo la variante `default`.
+- Los links que usaban `buttonVariants()` seguian perdiendo el color del texto por la cascada del navegador y del CSS global.
+- Se ha cerrado con clases especificas del sistema (`ui-button-*`) y color forzado en `globals.css` para que los CTAs sigan siendo legibles tambien cuando se renderizan como `<a>`.
+
+### Validacion hecha
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run build`
+- Revision visual real con Playwright sobre las cinco vistas prioritarias
+
+### Siguiente paso recomendado
+
+- Mantener esta prioridad de output visual en las siguientes iteraciones del CMS y revisar siempre los CTAs clave con captura o navegador real antes de dar por buena una pasada visual.
+
+---
+
+## Festapp handoff 2026-03-20 Iteracion UX/UI CMS sin rediseño
+
+### Hecho
+
+- Se ha aplicado una cabecera operativa comun a las pantallas CMS prioritarias:
+  - `/cms`
+  - `/cms/festivales`
+  - `/cms/festivales/nuevo`
+  - `/cms/festivales/:festivalId`
+  - `/cms/festivales/:festivalId/ediciones/nueva`
+  - `/cms/ediciones`
+  - `/cms/ediciones/:editionId`
+  - `/cms/ediciones/:editionId/actos`
+  - `/cms/actos/:eventId`
+- La cabecera superior del layout deja de comportarse como hero decorativo y pasa a una barra mas compacta con navegacion tipo tabs y sesion visible.
+- `CmsBreadcrumbs` baja peso visual:
+  - tamano menor
+  - menos contraste
+  - deja de competir con el titulo
+- La home CMS se simplifica como puente operativo:
+  - CTA principal a festivales
+  - accesos rapidos a ediciones recientes
+  - metricas relegadas a un papel secundario
+- El listado de festivales elimina la redundancia `card + boton abrir`:
+  - la card completa abre el festival
+  - el CTA principal de la pagina queda reservado a `Nuevo festival`
+  - la metadata del festival se compacta en badges y anos de edicion
+- La ficha de festival mantiene estructura pero se compacta:
+  - contexto estructural mas claro
+  - metricas resumidas con menos competencia
+  - el bloque de ediciones gana protagonismo como siguiente paso natural
+- La creacion de edicion mantiene pagina dedicada y mejora:
+  - jerarquia del formulario
+  - bloque de contexto del festival mas ligero
+  - checkbox `Marcar como edicion actual` con copy operativo
+  - errores de fechas junto al grupo afectado usando `field=dates`
+- La ficha de edicion se afina sin rehacerse:
+  - `Nuevo acto` sigue siendo CTA principal
+  - `Editar edicion` sigue subordinado
+  - `Entrar a actos` sigue siendo accion principal del bloque de programa
+  - enlaces publicos bajan a acciones textuales secundarias
+  - preview de actos recientes pasa a un formato mas denso y escaneable
+- `CmsEventsList` deja de usar boton redundante `Abrir ficha`:
+  - la tarjeta completa abre la ficha del acto
+  - soporta densidad `compact`
+  - hace mas visible `cancelled`, `updated` e `in_review`
+  - deja de mostrar textos de relleno como `Sin descripcion breve`
+- El listado de actos añade utilidad editorial minima sin convertirlo en tabla enterprise:
+  - busqueda simple
+  - filtro por estado
+  - orden por fecha o actualizacion reciente usando `updated_at`
+  - la accion publica `Ver agenda publica` baja a link secundario
+- La ficha de acto se reorganiza visualmente en grupos:
+  - identidad publica
+  - programacion y publicacion
+  - cambios y comunicacion
+  - contexto relacionado
+- En la ficha de acto `Ver en publico` ya no compite con el flujo editorial:
+  - queda como link secundario
+  - `Guardar cambios` mantiene el peso principal dentro del formulario
+
+### Trade-offs asumidos
+
+- No se ha abierto una re-arquitectura del design system:
+  - se anade `CmsPageHeader`
+  - `SectionCard` se flexibiliza un poco para evitar duplicar estructuras
+- El filtro del listado de actos usa estado visible e `in_review`, no una taxonomia nueva de workflow.
+- La ordenacion por "actualizacion reciente" se resuelve con `updated_at` ya existente en schema; no se ha anadido nueva logica de tracking.
+- Las cards de ediciones mantienen accion secundaria `Ver actos`; no se fuerzan como cards completamente clickables porque ahi si hay una segunda accion real.
+
+### Validacion hecha
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run build`
+
+### Siguiente paso recomendado
+
+- Hacer revision visual real en navegador del CMS ya afinado para ajustar solo detalles finos de espaciado o copy si aparecieran en uso, sin reabrir una nueva capa de rediseño.

@@ -1,0 +1,2 @@
+export const controlBaseClassName =
+  "w-full rounded-[var(--radius-md)] border border-[color:var(--border-strong)] bg-[var(--surface-strong)] text-sm text-[var(--foreground)] shadow-[var(--shadow-control)] outline-none transition placeholder:text-[var(--muted-foreground)] focus-visible:border-[var(--foreground)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-60";

@@ -1,13 +1,97 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f6efe2;
-  --foreground: #1e1b16;
-  --card: rgba(255, 252, 247, 0.82);
-  --muted: #6b6459;
-  --accent: #9b2c16;
-  --accent-2: #f1b98b;
-  --border: rgba(30, 27, 22, 0.08);
+  /* Primitive tokens: color */
+  --color-stone-950: #1e1b16;
+  --color-stone-900: #2b261f;
+  --color-stone-800: #3f392f;
+  --color-stone-700: #5a5348;
+  --color-stone-600: #6b6459;
+  --color-stone-500: #8d8579;
+  --color-stone-300: #d7cec2;
+  --color-stone-200: #e8dfd4;
+  --color-stone-100: #f4ede2;
+  --color-stone-50: #fcf8f1;
+
+  --color-sand-200: #efe6d9;
+  --color-sand-100: #f6efe2;
+  --color-sand-50: #fcf6ec;
+
+  --color-amber-600: #d67b22;
+  --color-amber-50: #fff6e8;
+
+  --color-red-700: #8c2b15;
+  --color-red-600: #9b2c16;
+  --color-red-50: #fff3ef;
+
+  --color-emerald-700: #166a43;
+  --color-emerald-50: #ecfdf3;
+
+  --color-white: #ffffff;
+  --color-white-rgb: 255 255 255;
+  --color-black-rgb: 30 27 22;
+
+  /* Primitive tokens: typography */
+  --font-family-sans: var(--font-sans), sans-serif;
+  --font-family-display: var(--font-serif), Georgia, serif;
+  --font-size-body: 0.95rem;
+  --font-size-label: 0.875rem;
+  --font-size-caption: 0.75rem;
+  --line-height-body: 1.55;
+  --line-height-tight: 1.2;
+
+  /* Primitive tokens: radius */
+  --radius-sm: 0.75rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.5rem;
+  --radius-xl: 1.75rem;
+  --radius-pill: 999px;
+
+  /* Primitive tokens: spacing */
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+
+  /* Primitive tokens: shadow */
+  --shadow-card: 0 24px 70px -40px rgba(73, 44, 24, 0.5);
+  --shadow-card-strong: 0 28px 80px -45px rgba(0, 0, 0, 0.75);
+  --shadow-control: 0 1px 2px rgba(30, 27, 22, 0.08);
+
+  /* Semantic tokens: surfaces and text */
+  --background: var(--color-sand-100);
+  --foreground: var(--color-stone-950);
+  --surface: rgba(var(--color-white-rgb) / 0.82);
+  --surface-strong: var(--color-white);
+  --surface-muted: #fff9f3;
+  --border: rgba(var(--color-black-rgb) / 0.08);
+  --border-strong: rgba(var(--color-black-rgb) / 0.15);
+  --muted: var(--color-stone-600);
+  --muted-foreground: var(--color-stone-500);
+  --overlay: rgba(0 0 0 / 0.35);
+
+  /* Semantic tokens: actions */
+  --primary: var(--color-stone-950);
+  --primary-foreground: var(--color-white);
+  --primary-hover: var(--color-stone-800);
+  --accent: var(--color-red-600);
+  --accent-foreground: var(--color-white);
+  --accent-hover: var(--color-red-700);
+
+  /* Semantic tokens: status */
+  --success: var(--color-emerald-700);
+  --success-surface: var(--color-emerald-50);
+  --success-border: rgba(22, 106, 67, 0.18);
+  --warning: var(--color-amber-600);
+  --warning-surface: var(--color-amber-50);
+  --warning-border: rgba(214, 123, 34, 0.2);
+  --danger: var(--color-red-600);
+  --danger-surface: var(--color-red-50);
+  --danger-border: rgba(155, 44, 22, 0.18);
+
+  --focus-ring: rgba(30, 27, 22, 0.18);
 }
 
 * {
@@ -25,15 +109,57 @@ body {
     radial-gradient(circle at top left, rgba(241, 185, 139, 0.5), transparent 32%),
     linear-gradient(180deg, #fcf6ec 0%, #f6efe2 42%, #efe6d9 100%);
   color: var(--foreground);
-  font-family: var(--font-sans), sans-serif;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
 }
 
 a {
-  color: inherit;
   text-decoration: none;
+}
+
+.ui-button-default {
+  color: #fff !important;
+}
+
+.ui-button-outline {
+  color: var(--foreground) !important;
+}
+
+.ui-button-ghost {
+  color: var(--muted) !important;
+}
+
+.ui-button-ghost:hover {
+  color: var(--foreground) !important;
+}
+
+.ui-button-link {
+  color: var(--accent) !important;
+}
+
+.ui-button-link:hover {
+  color: var(--accent-hover) !important;
+}
+
+.ui-button-danger {
+  color: #fff !important;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: var(--foreground);
 }
 
 ::selection {
   background: rgba(155, 44, 22, 0.18);
 }
-

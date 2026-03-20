@@ -1,22 +1,29 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { cmsNavigation } from "@/lib/config/site";
-import type { AppRole } from "@/lib/domain/types";
+import { cn } from "@/lib/utils";
 
-type CmsNavProps = {
-  role: AppRole;
-};
-
-export function CmsNav({ role }: CmsNavProps) {
-  const items = cmsNavigation.filter((item) => role === "admin" || item.href !== "/cms/catalogo");
+export function CmsNav() {
+  const pathname = usePathname();
+  const isActive = (href: string) =>
+    href === "/cms" ? pathname === "/cms" : pathname.startsWith(href);
 
   return (
-    <nav className="flex flex-wrap gap-2">
-      {items.map((item) => (
+    <nav className="flex flex-wrap gap-2" aria-label="Secciones CMS">
+      {cmsNavigation.map((item) => (
         <Link
           key={item.href}
           href={item.href}
-          className="rounded-full border border-black/10 bg-white px-3 py-1.5 text-sm text-stone-700 transition hover:bg-stone-950 hover:text-white"
+          aria-current={isActive(item.href) ? "page" : undefined}
+          className={cn(
+            "inline-flex min-h-10 items-center justify-center rounded-full border px-4 py-2 text-sm font-medium transition",
+            isActive(item.href)
+              ? "border-white bg-white text-stone-950"
+              : "border-white/14 bg-white/6 text-stone-200 hover:bg-white/10 hover:text-white",
+          )}
         >
           {item.label}
         </Link>

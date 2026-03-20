@@ -10,8 +10,6 @@ export const publicNavigation = [
 ] as const;
 
 export const cmsNavigation = [
-  { label: "Resumen", href: "/cms" },
-  { label: "Actos", href: "/cms/actos" },
-  { label: "Alertas", href: "/cms/alertas" },
-  { label: "Catalogo", href: "/cms/catalogo" },
+  { label: "Inicio", href: "/cms" },
+  { label: "Festivales", href: "/cms/festivales" },
 ] as const;
