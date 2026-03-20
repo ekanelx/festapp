@@ -368,3 +368,128 @@ Modificar plantillas AGENTS antes de expandir esta convención a más repos.
 ### Siguiente paso recomendado
 
 - Mantener esta ficha publica estable y pasar a la siguiente pieza funcional del catalogo sin rehacer UX base.
+
+---
+
+## Festapp handoff 2026-03-20 Home global publica
+
+### Hecho
+
+- `/` ya no redirige automaticamente a una sola edicion activa y pasa a ser la home global publica de Festapp.
+- La home global lee Supabase real y lista ediciones publicadas que siguen vigentes o proximas.
+- Cada item enlaza directamente al resumen de su edicion.
+- La home muestra solo contexto minimo para decidir rapido:
+  - nombre del festival
+  - nombre de edicion
+  - ciudad si existe
+  - rango de fechas
+  - estado temporal simple (`Hoy`, `En curso`, `Proximamente`)
+  - numero de actos publicados cuando ayuda
+- Se mantiene el vertical por edicion sin rehacerlo:
+  - resumen de edicion
+  - agenda
+  - detalle de acto
+- El seed demo se amplia con un segundo festival proximo para validar la home global con datos reales:
+  - `moros-y-cristianos` en curso
+  - `feria-de-primavera` proximo
+- Se ha resincronizado el baseline real con `npm run cms:seed-demo`.
+
+### Fuera de alcance deliberadamente
+
+- seguir festivales
+- favoritos
+- login publico
+- mapa
+- busqueda compleja
+- filtros avanzados
+- cambios en CMS
+
+### Validacion hecha
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run build`
+- comprobacion de datos reales en Supabase para confirmar dos ediciones visibles y cercanas:
+  - `moros-y-cristianos / 2026`
+  - `feria-de-primavera / 2026`
+
+### Siguiente paso recomendado
+
+- Mantener estable la home global y abrir la siguiente pieza funcional sin volver a pulir UX publica salvo bugs.
+
+---
+
+## Festapp handoff 2026-03-20 Salida minima a mapas
+
+### Hecho
+
+- El detalle publico del acto ya puede mostrar un CTA de `Abrir en mapas` cuando la ubicacion es resoluble con datos reales.
+- La resolucion se apoya en datos ya existentes de `locations`:
+  - `google_maps_url` si existiera
+  - si no, busqueda simple por `name + address`
+- No se ha anadido mapa embebido ni integracion compleja.
+- El CTA se oculta cuando la ubicacion esta pendiente, no publicada o no tiene direccion suficiente.
+- No ha hecho falta cambiar schema ni seed para validar esta funcionalidad porque las ubicaciones publicadas actuales ya tienen `address`.
+
+### Fuera de alcance deliberadamente
+
+- mapa embebido
+- librerias de mapas
+- calculo interno de rutas
+- favoritos
+- alertas
+- share avanzado
+
+### Validacion hecha
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run build`
+- comprobacion de datos reales en Supabase:
+  - `apertura-del-mercado-medieval` tiene `address` suficiente
+  - `entrada-de-bandas` no muestra CTA por `location_pending = true`
+  - `cierre-infantil` no muestra CTA por `location_pending = true`
+
+### Siguiente paso recomendado
+
+- Mantener esta salida simple a mapas y solo abrir mapa embebido o mejoras de rutas si aparece una necesidad real posterior.
+
+---
+
+## Festapp handoff 2026-03-20 Visibilidad publica de cambios
+
+### Hecho
+
+- La experiencia publica ahora hace mas visibles los actos `updated` y `cancelled` sin abrir una capa nueva de alertas.
+- La agenda refuerza visualmente los actos con cambios:
+  - color de tarjeta mas expresivo segun estado
+  - etiqueta de estado mas visible
+  - `change_note` visible en lista cuando existe
+- El resumen de edicion muestra un bloque pequeno de `Cambios relevantes` cuando existen actos actualizados o cancelados.
+- El detalle de acto destaca los cambios operativos con un bloque superior de `Cambio relevante` cuando el estado es `updated` o `cancelled`.
+- Los estados que no aportan como cambio operativo no se sobrerrepresentan en ese bloque.
+- Todo sigue leyendo datos reales existentes de `events`, incluyendo `status` y `change_note`.
+
+### Fuera de alcance deliberadamente
+
+- push notifications
+- favoritos
+- login publico
+- backend de suscripciones
+- centro complejo de alertas
+- cambios en CMS
+
+### Validacion hecha
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run build`
+- comprobacion de datos reales con actos que ya usan cambios publicados:
+  - `apertura-del-mercado-medieval`
+  - `mascleta-de-mediodia`
+  - `embajada-mora`
+  - `tardeo-de-charangas`
+
+### Siguiente paso recomendado
+
+- Mantener esta capa de visibilidad de cambios como baseline suficiente hasta que llegue una fase especifica de alertas o push.

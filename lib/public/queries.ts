@@ -21,6 +21,7 @@ type PublicEditionRow = {
 type RawLocationRecord = {
   name: string;
   address?: string | null;
+  google_maps_url?: string | null;
 };
 
 type RawLocationRelation = RawLocationRecord | RawLocationRecord[] | null;
@@ -31,6 +32,7 @@ type PublicEventRow = {
   slug: string;
   starts_at: string;
   status: EventStatus;
+  change_note?: string | null;
   location_pending: boolean;
   location: RawLocationRelation;
 };
@@ -55,12 +57,14 @@ export type PublicEventSummary = {
   id: string;
   slug: string;
   title: string;
+  status: EventStatus;
   startsAtIso: string;
   startsAtLabel: string;
   startsAtTimeLabel: string;
   startsAtDayLabel: string;
   locationLabel: string | null;
   statusLabel: string | null;
+  changeNote: string | null;
 };
 
 export type PublicEditionPageData = {
@@ -74,6 +78,19 @@ export type PublicEditionPageData = {
   todayEvents: PublicEventSummary[];
   upcomingEvents: PublicEventSummary[];
   allEvents: PublicEventSummary[];
+  changedEvents: PublicEventSummary[];
+};
+
+export type PublicHomeEditionItem = {
+  festivalName: string;
+  festivalSlug: string;
+  festivalCity: string | null;
+  editionName: string;
+  editionSlug: string;
+  year: number;
+  dateRangeLabel: string;
+  temporalLabel: string;
+  publishedEventsCount: number;
 };
 
 export type PublicEventDetailData = {
@@ -82,6 +99,7 @@ export type PublicEventDetailData = {
   editionName: string;
   editionSlug: string;
   title: string;
+  status: EventStatus;
   startsAtIso: string;
   startsAtDateLabel: string;
   startsAtDayLabel: string;
@@ -89,6 +107,7 @@ export type PublicEventDetailData = {
   locationName: string | null;
   locationAddress: string | null;
   locationStatusLabel: string;
+  mapsUrl: string | null;
   statusLabel: string | null;
   statusNote: string | null;
   shortDescription: string | null;
@@ -155,6 +174,15 @@ function formatEditionDateRange(startsOn: string, endsOn: string, timeZone: stri
   return `${formatter.format(new Date(startsOn))} - ${formatter.format(new Date(endsOn))}`;
 }
 
+function formatDateKeyForTimeZone(date: Date, timeZone: string) {
+  return new Intl.DateTimeFormat("sv-SE", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
 function extractLocation(location: RawLocationRelation) {
   if (!location) {
     return null;
@@ -165,6 +193,28 @@ function extractLocation(location: RawLocationRelation) {
   }
 
   return location;
+}
+
+function buildMapsUrl(location: RawLocationRecord | null) {
+  if (!location) {
+    return null;
+  }
+
+  if (location.google_maps_url) {
+    return location.google_maps_url;
+  }
+
+  if (!location.address) {
+    return null;
+  }
+
+  const query = [location.name, location.address].filter(Boolean).join(", ");
+
+  if (!query) {
+    return null;
+  }
+
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
 function getUserStatusLabel(status: EventStatus) {
@@ -210,12 +260,14 @@ function mapEvent(row: PublicEventRow, timeZone: string): PublicEventSummary {
     id: row.id,
     slug: row.slug,
     title: row.title,
+    status: row.status,
     startsAtIso: row.starts_at,
     startsAtLabel: formatEventDate(row.starts_at, timeZone),
     startsAtTimeLabel: formatEventTime(row.starts_at, timeZone),
     startsAtDayLabel: formatEventDay(row.starts_at, timeZone),
     locationLabel: locationName ?? (row.location_pending ? "Ubicacion por confirmar" : null),
     statusLabel: getUserStatusLabel(row.status),
+    changeNote: null,
   };
 }
 
@@ -232,6 +284,7 @@ function mapEventDetail(
     editionName: edition.name,
     editionSlug: edition.slug,
     title: row.title,
+    status: row.status,
     startsAtIso: row.starts_at,
     startsAtDateLabel: formatEventLongDate(row.starts_at, edition.timezone),
     startsAtDayLabel: formatEventDay(row.starts_at, edition.timezone),
@@ -241,6 +294,7 @@ function mapEventDetail(
     locationStatusLabel: row.location_pending
       ? "Ubicacion pendiente de confirmar"
       : "Ubicacion no publicada",
+    mapsUrl: buildMapsUrl(location),
     statusLabel: getUserStatusLabel(row.status),
     statusNote: getUserStatusNote(row.status, row.change_note),
     shortDescription: row.short_description,
@@ -255,6 +309,32 @@ function splitEventsByTime(events: PublicEventSummary[], timeZone: string) {
     todayEvents: events.filter((event) => formatDayKey(event.startsAtIso, timeZone) === todayKey),
     upcomingEvents: events.filter((event) => new Date(event.startsAtIso).getTime() >= now.getTime()),
   };
+}
+
+function getChangedEvents(events: PublicEventSummary[]) {
+  return events.filter((event) => event.status === "updated" || event.status === "cancelled");
+}
+
+function getEditionTemporalLabel(
+  startsOn: string,
+  endsOn: string,
+  timeZone: string,
+) {
+  const todayKey = formatDateKeyForTimeZone(new Date(), timeZone);
+
+  if (todayKey < startsOn) {
+    return "Proximamente";
+  }
+
+  if (todayKey === startsOn) {
+    return "Hoy";
+  }
+
+  if (todayKey <= endsOn) {
+    return "En curso";
+  }
+
+  return null;
 }
 
 async function getFestivalBySlug(festivalSlug: string): Promise<QueryState<PublicFestivalRow>> {
@@ -341,6 +421,98 @@ export async function getActivePublicEditionRoute(): Promise<QueryState<PublicEd
   }
 }
 
+export async function getPublicHomeEditionItems(): Promise<QueryState<PublicHomeEditionItem[]>> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const todayKey = formatDateKeyForTimeZone(new Date(), "Europe/Madrid");
+    const { data, error } = await supabase
+      .from("editions")
+      .select(
+        "id,name,slug,year,starts_on,ends_on,timezone,festival:festivals!inner(name,slug,city)",
+      )
+      .gte("ends_on", todayKey)
+      .order("starts_on", { ascending: true });
+
+    if (error) {
+      return { data: null, error: error.message };
+    }
+
+    const editions = (data ?? [])
+      .map((row) => {
+        const festivalRelation = Array.isArray(row.festival) ? row.festival[0] : row.festival;
+        const temporalLabel = getEditionTemporalLabel(
+          row.starts_on,
+          row.ends_on,
+          row.timezone,
+        );
+
+        if (!festivalRelation?.slug || !temporalLabel) {
+          return null;
+        }
+
+        return {
+          id: row.id,
+          editionName: row.name,
+          editionSlug: row.slug,
+          year: row.year,
+          startsOn: row.starts_on,
+          endsOn: row.ends_on,
+          timeZone: row.timezone,
+          temporalLabel,
+          festivalName: festivalRelation.name,
+          festivalSlug: festivalRelation.slug,
+          festivalCity: festivalRelation.city ?? null,
+        };
+      })
+      .filter((edition): edition is NonNullable<typeof edition> => edition !== null);
+
+    if (editions.length === 0) {
+      return { data: [], error: null };
+    }
+
+    const editionIds = editions.map((edition) => edition.id);
+    const { data: eventRows, error: eventError } = await supabase
+      .from("events")
+      .select("edition_id")
+      .in("edition_id", editionIds);
+
+    if (eventError) {
+      return { data: null, error: eventError.message };
+    }
+
+    const eventCounts = new Map<string, number>();
+
+    (eventRows ?? []).forEach((row) => {
+      eventCounts.set(row.edition_id, (eventCounts.get(row.edition_id) ?? 0) + 1);
+    });
+
+    return {
+      data: editions.map((edition) => ({
+        festivalName: edition.festivalName,
+        festivalSlug: edition.festivalSlug,
+        festivalCity: edition.festivalCity,
+        editionName: edition.editionName,
+        editionSlug: edition.editionSlug,
+        year: edition.year,
+        dateRangeLabel: formatEditionDateRange(
+          edition.startsOn,
+          edition.endsOn,
+          edition.timeZone,
+        ),
+        temporalLabel: edition.temporalLabel,
+        publishedEventsCount: eventCounts.get(edition.id) ?? 0,
+      })),
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error:
+        error instanceof Error ? error.message : "No se pudo cargar la home global de Festapp.",
+    };
+  }
+}
+
 export async function getPublicEditionPageData(
   festivalSlug: string,
   editionSlug: string,
@@ -371,7 +543,7 @@ export async function getPublicEditionPageData(
     const supabase = await createSupabaseServerClient();
     const { data: eventRows, error } = await supabase
       .from("events")
-      .select("id,title,slug,starts_at,status,location_pending,location:locations(name)")
+      .select("id,title,slug,starts_at,status,change_note,location_pending,location:locations(name)")
       .eq("edition_id", edition.id)
       .order("starts_at", { ascending: true });
 
@@ -379,8 +551,12 @@ export async function getPublicEditionPageData(
       return { data: null, error: error.message };
     }
 
-    const allEvents = (eventRows ?? []).map((row) => mapEvent(row, edition.timezone));
+    const allEvents = (eventRows ?? []).map((row) => ({
+      ...mapEvent(row, edition.timezone),
+      changeNote: row.change_note ?? null,
+    }));
     const { todayEvents, upcomingEvents } = splitEventsByTime(allEvents, edition.timezone);
+    const changedEvents = getChangedEvents(allEvents);
 
     return {
       data: {
@@ -398,6 +574,7 @@ export async function getPublicEditionPageData(
         todayEvents,
         upcomingEvents,
         allEvents,
+        changedEvents,
       },
       error: null,
     };
@@ -439,7 +616,7 @@ export async function getPublicEventDetailData(
     const { data, error } = await supabase
       .from("events")
       .select(
-        "title,slug,short_description,starts_at,status,location_pending,change_note,location:locations(name,address)",
+        "title,slug,short_description,starts_at,status,location_pending,change_note,location:locations(name,address,google_maps_url)",
       )
       .eq("edition_id", editionState.data.id)
       .eq("slug", eventSlug)

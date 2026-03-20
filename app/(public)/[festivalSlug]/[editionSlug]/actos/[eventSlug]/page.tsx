@@ -61,6 +61,8 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
     );
   }
 
+  const isChangeRelevant = event.status === "updated" || event.status === "cancelled";
+
   return (
     <div className="space-y-6">
       <PublicEditionNav
@@ -95,6 +97,18 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
             ) : null}
           </div>
 
+          {isChangeRelevant && event.statusLabel ? (
+            <section className="rounded-3xl border border-[#9b2c16]/15 bg-[#fff5ef] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#8c2b15]">
+                Cambio relevante
+              </p>
+              <p className="mt-2 text-base font-semibold text-stone-900">{event.statusLabel}</p>
+              {event.statusNote ? (
+                <p className="mt-1 text-sm leading-6 text-stone-700">{event.statusNote}</p>
+              ) : null}
+            </section>
+          ) : null}
+
           <div className="grid gap-3 sm:grid-cols-2">
             <section className="rounded-3xl bg-[#fff9f3] p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
@@ -120,6 +134,16 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
                   <p className="mt-1 text-sm leading-6 text-stone-600">
                     {event.locationAddress ?? "Direccion no publicada todavia."}
                   </p>
+                  {event.mapsUrl ? (
+                    <a
+                      href={event.mapsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-4 inline-flex rounded-full bg-[#9b2c16] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#7f200f]"
+                    >
+                      Abrir en mapas
+                    </a>
+                  ) : null}
                 </>
               ) : (
                 <p className="mt-3 text-base font-semibold text-stone-900">
@@ -129,7 +153,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
             </section>
           </div>
 
-          {event.statusLabel ? (
+          {event.statusLabel && !isChangeRelevant ? (
             <section className="rounded-3xl border border-black/8 bg-white p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
                 Estado visible

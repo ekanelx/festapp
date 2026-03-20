@@ -45,6 +45,7 @@ export default async function EditionHomePage({ params }: EditionHomePageProps) 
 
   const todayPreview = edition.todayEvents.slice(0, 3);
   const nextEvent = edition.upcomingEvents[0] ?? null;
+  const changedEventsPreview = edition.changedEvents.slice(0, 3);
 
   return (
     <div className="space-y-6">
@@ -80,6 +81,42 @@ export default async function EditionHomePage({ params }: EditionHomePageProps) 
           </Link>
         </div>
       </section>
+
+      {changedEventsPreview.length > 0 ? (
+        <SectionCard
+          eyebrow="Cambios"
+          title="Cambios relevantes"
+          description="Solo se muestran actos actualizados o cancelados para detectarlos rapido."
+        >
+          <div className="space-y-3">
+            {changedEventsPreview.map((event) => (
+              <Link
+                key={event.id}
+                href={`/${edition.festivalSlug}/${edition.editionSlug}/actos/${event.slug}`}
+                className="block rounded-3xl border border-[#9b2c16]/12 bg-[#fff5ef] p-4 transition hover:border-[#9b2c16]/25 hover:bg-white"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <p className="font-semibold text-stone-950">{event.title}</p>
+                    <p className="text-sm text-stone-600">
+                      {event.startsAtDayLabel} · {event.startsAtTimeLabel}
+                    </p>
+                    {event.changeNote ? (
+                      <p className="pt-1 text-sm leading-5 text-[#8c2b15]">{event.changeNote}</p>
+                    ) : null}
+                  </div>
+
+                  {event.statusLabel ? (
+                    <span className="rounded-full bg-[#9b2c16] px-2.5 py-1 text-xs font-medium text-white">
+                      {event.statusLabel}
+                    </span>
+                  ) : null}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </SectionCard>
+      ) : null}
 
       {todayPreview.length > 0 ? (
         <EditionOverview
