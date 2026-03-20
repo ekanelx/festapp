@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "cms:create-user": "node scripts/create-internal-user.mjs",
+    "cms:seed-demo": "node scripts/seed-cms-demo.mjs",
+    "cms:seed-users": "node scripts/seed-cms-demo-users.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",
@@ -30,4 +33,3 @@
     "typescript": "^5.9.3"
   }
 }
-

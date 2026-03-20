@@ -1,11 +1,18 @@
 import Link from "next/link";
 
 import { cmsNavigation } from "@/lib/config/site";
+import type { AppRole } from "@/lib/domain/types";
 
-export function CmsNav() {
+type CmsNavProps = {
+  role: AppRole;
+};
+
+export function CmsNav({ role }: CmsNavProps) {
+  const items = cmsNavigation.filter((item) => role === "admin" || item.href !== "/cms/catalogo");
+
   return (
     <nav className="flex flex-wrap gap-2">
-      {cmsNavigation.map((item) => (
+      {items.map((item) => (
         <Link
           key={item.href}
           href={item.href}

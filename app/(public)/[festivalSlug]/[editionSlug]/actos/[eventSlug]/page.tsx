@@ -1,74 +1,156 @@
 import Link from "next/link";
 
+import { PublicEditionNav } from "@/components/public/public-edition-nav";
 import { SectionCard } from "@/components/shared/section-card";
-import { getEditionScaffold } from "@/lib/data/scaffold";
+import { getPublicEventDetailData } from "@/lib/public/queries";
 
 type EventDetailPageProps = {
-  params: {
+  params: Promise<{
     festivalSlug: string;
     editionSlug: string;
     eventSlug: string;
-  };
+  }>;
 };
 
-export default function EventDetailPage({ params }: EventDetailPageProps) {
-  const edition = getEditionScaffold(params.festivalSlug, params.editionSlug);
-  const events = [...edition.now, ...edition.today, ...edition.upcoming, ...edition.historical];
-  const event = events.find((item) => item.slug === params.eventSlug) ?? events[0];
+export const dynamic = "force-dynamic";
 
-  return (
-    <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+export default async function EventDetailPage({ params }: EventDetailPageProps) {
+  const resolvedParams = await params;
+  const { data: event, error } = await getPublicEventDetailData(
+    resolvedParams.festivalSlug,
+    resolvedParams.editionSlug,
+    resolvedParams.eventSlug,
+  );
+
+  const agendaHref = `/${resolvedParams.festivalSlug}/${resolvedParams.editionSlug}/agenda`;
+
+  if (error) {
+    return (
       <SectionCard
-        eyebrow="Detalle de acto"
-        title={event.title}
-        description="Placeholder de ficha operativa: hora, estado, lugar, descripcion breve, compartir, favorito y salida a Google Maps."
+        eyebrow="Error"
+        title="No se ha podido cargar el acto"
+        description="El detalle publico read-only ya usa Supabase real y esta carga ha fallado."
       >
-        <div className="space-y-4 text-sm text-stone-700">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-3xl bg-[#fff9f3] p-4">
-              <p className="text-xs uppercase tracking-[0.24em] text-stone-500">Hora</p>
-              <p className="mt-2 text-lg font-semibold text-stone-900">{event.startsAt}</p>
-            </div>
-            <div className="rounded-3xl bg-[#fff9f3] p-4">
-              <p className="text-xs uppercase tracking-[0.24em] text-stone-500">Estado</p>
-              <p className="mt-2 text-lg font-semibold text-stone-900">{event.status}</p>
-            </div>
-          </div>
-
-          <div className="rounded-3xl bg-[#fff9f3] p-4">
-            <p className="text-xs uppercase tracking-[0.24em] text-stone-500">Ubicacion</p>
-            <p className="mt-2 font-semibold text-stone-900">{event.location}</p>
-            <p className="mt-1 text-stone-600">Salida a Google Maps pendiente de datos reales.</p>
-          </div>
-
-          <p className="leading-6 text-stone-600">
-            Esta superficie queda reservada para mostrar cambios importantes, comparsa o filà
-            asociada, boton de compartir nativo y favorito local en navegador.
-          </p>
-        </div>
-      </SectionCard>
-
-      <SectionCard
-        eyebrow="Siguiente iteracion"
-        title="Que faltara conectar aqui"
-        description="Este panel resume la implementacion real que ira en fases posteriores."
-      >
-        <ul className="space-y-3 text-sm text-stone-700">
-          <li>Consulta real a Supabase por slug y edicion.</li>
-          <li>Etiqueta visual de cambios cuando haya modificacion relevante.</li>
-          <li>Share sheet movil y fallback de copia de enlace.</li>
-          <li>Favoritos locales persistidos por `localStorage`.</li>
-        </ul>
-        <div className="mt-5">
+        <div className="space-y-4 text-sm text-stone-600">
+          <p>{error}</p>
           <Link
-            href={`/${edition.festivalSlug}/${edition.editionSlug}/agenda`}
-            className="text-sm font-semibold text-[#9b2c16] underline-offset-4 hover:underline"
+            href={agendaHref}
+            className="inline-flex font-semibold text-[#9b2c16] underline-offset-4 hover:underline"
           >
             Volver a agenda
           </Link>
         </div>
       </SectionCard>
+    );
+  }
+
+  if (!event) {
+    return (
+      <SectionCard
+        eyebrow="No disponible"
+        title="No encontramos ese acto"
+        description="Comprueba el enlace o revisa que el acto siga publicado dentro de esta edicion."
+      >
+        <Link
+          href={agendaHref}
+          className="inline-flex text-sm font-semibold text-[#9b2c16] underline-offset-4 hover:underline"
+        >
+          Volver a agenda
+        </Link>
+      </SectionCard>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <PublicEditionNav
+        festivalSlug={event.festivalSlug}
+        editionSlug={event.editionSlug}
+        current="agenda"
+      />
+
+      <div>
+        <Link
+          href={`/${event.festivalSlug}/${event.editionSlug}/agenda`}
+          className="text-sm font-semibold text-[#9b2c16] underline-offset-4 hover:underline"
+        >
+          Volver a agenda
+        </Link>
+      </div>
+
+      <SectionCard
+        eyebrow="Acto"
+        title={event.title}
+        description={`${event.festivalName} / ${event.editionName}`}
+      >
+        <div className="space-y-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-[#fff3e6] px-3 py-1.5 text-sm text-stone-700">
+              {event.startsAtDayLabel}
+            </span>
+            {event.statusLabel ? (
+              <span className="rounded-full bg-[#9b2c16] px-3 py-1.5 text-sm font-medium text-white">
+                {event.statusLabel}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <section className="rounded-3xl bg-[#fff9f3] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+                Fecha y hora
+              </p>
+              <p className="mt-3 text-base font-semibold text-stone-900">
+                {event.startsAtDateLabel}
+              </p>
+              <p className="mt-2 text-3xl font-semibold leading-none text-stone-950">
+                {event.startsAtTimeLabel}
+              </p>
+            </section>
+
+            <section className="rounded-3xl bg-[#fff9f3] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+                Ubicacion
+              </p>
+              {event.locationName ? (
+                <>
+                  <p className="mt-3 text-base font-semibold text-stone-900">
+                    {event.locationName}
+                  </p>
+                  <p className="mt-1 text-sm leading-6 text-stone-600">
+                    {event.locationAddress ?? "Direccion no publicada todavia."}
+                  </p>
+                </>
+              ) : (
+                <p className="mt-3 text-base font-semibold text-stone-900">
+                  {event.locationStatusLabel}
+                </p>
+              )}
+            </section>
+          </div>
+
+          {event.statusLabel ? (
+            <section className="rounded-3xl border border-black/8 bg-white p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+                Estado visible
+              </p>
+              <p className="mt-2 text-base font-semibold text-stone-900">{event.statusLabel}</p>
+              {event.statusNote ? (
+                <p className="mt-1 text-sm leading-6 text-stone-600">{event.statusNote}</p>
+              ) : null}
+            </section>
+          ) : null}
+
+          {event.shortDescription ? (
+            <section className="rounded-3xl border border-black/8 bg-white p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+                Descripcion breve
+              </p>
+              <p className="mt-2 text-sm leading-6 text-stone-700">{event.shortDescription}</p>
+            </section>
+          ) : null}
+        </div>
+      </SectionCard>
     </div>
   );
 }
-

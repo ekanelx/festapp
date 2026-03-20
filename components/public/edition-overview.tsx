@@ -1,71 +1,111 @@
 import Link from "next/link";
 
-import type { EventCard } from "@/lib/domain/types";
+import type { PublicEventSummary } from "@/lib/public/queries";
 
 import { SectionCard } from "@/components/shared/section-card";
 
 type EditionOverviewProps = {
-  festivalSlug: string;
-  editionSlug: string;
   title: string;
   description: string;
-  events: EventCard[];
+  emptyMessage: string;
+  events: PublicEventSummary[];
+  showDayLabel?: boolean;
+  festivalSlug?: string;
+  editionSlug?: string;
 };
 
-function statusLabel(status: EventCard["status"]) {
-  switch (status) {
-    case "updated":
-      return "Actualizado";
-    case "cancelled":
-      return "Cancelado";
-    case "finished":
-      return "Finalizado";
-    default:
-      return "Programado";
-  }
-}
-
 export function EditionOverview({
-  festivalSlug,
-  editionSlug,
   title,
   description,
+  emptyMessage,
   events,
+  showDayLabel = false,
+  festivalSlug,
+  editionSlug,
 }: EditionOverviewProps) {
   return (
     <SectionCard title={title} description={description}>
-      <div className="space-y-3">
-        {events.map((event) => (
-          <article
-            key={event.slug}
-            className="rounded-3xl border border-black/8 bg-[#fff9f3] p-4"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="space-y-1">
-                <p className="font-semibold text-stone-900">{event.title}</p>
-                <p className="text-sm text-stone-600">
-                  {event.startsAt} · {event.location} · {event.category}
-                </p>
-              </div>
-              <span className="rounded-full bg-stone-950 px-2.5 py-1 text-xs font-medium text-white">
-                {statusLabel(event.status)}
-              </span>
-            </div>
+      {events.length === 0 ? (
+        <div className="rounded-3xl border border-dashed border-black/12 bg-stone-50 px-4 py-5 text-sm text-stone-600">
+          {emptyMessage}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {events.map((event) => (
+            <article
+              key={event.id}
+              className="rounded-3xl border border-black/8 bg-[#fff9f3] p-4 transition hover:border-black/15 hover:bg-white"
+            >
+              {festivalSlug && editionSlug ? (
+                <Link
+                  href={`/${festivalSlug}/${editionSlug}/actos/${event.slug}`}
+                  className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9b2c16] focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                >
+                  <div className="grid grid-cols-[72px_1fr] gap-4">
+                    <div className="rounded-2xl bg-white px-2 py-3 text-center">
+                      <p className="text-2xl font-semibold leading-none text-stone-950">
+                        {event.startsAtTimeLabel}
+                      </p>
+                      {showDayLabel ? (
+                        <p className="mt-2 text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+                          {event.startsAtDayLabel}
+                        </p>
+                      ) : null}
+                    </div>
 
-            {event.highlight ? <p className="mt-3 text-sm text-stone-600">{event.highlight}</p> : null}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <p className="font-semibold text-stone-900">{event.title}</p>
+                        {event.locationLabel ? (
+                          <p className="text-sm text-stone-500">{event.locationLabel}</p>
+                        ) : (
+                          <p className="text-sm text-stone-400">Sin ubicacion publicada</p>
+                        )}
+                      </div>
 
-            <div className="mt-4">
-              <Link
-                href={`/${festivalSlug}/${editionSlug}/actos/${event.slug}`}
-                className="text-sm font-semibold text-[#9b2c16] underline-offset-4 hover:underline"
-              >
-                Ver detalle placeholder
-              </Link>
-            </div>
-          </article>
-        ))}
-      </div>
+                      {event.statusLabel ? (
+                        <span className="rounded-full bg-[#9b2c16] px-2.5 py-1 text-xs font-medium text-white">
+                          {event.statusLabel}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                </Link>
+              ) : (
+                <div className="grid grid-cols-[72px_1fr] gap-4">
+                  <div className="rounded-2xl bg-white px-2 py-3 text-center">
+                    <p className="text-2xl font-semibold leading-none text-stone-950">
+                      {event.startsAtTimeLabel}
+                    </p>
+                    {showDayLabel ? (
+                      <p className="mt-2 text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+                        {event.startsAtDayLabel}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <p className="font-semibold text-stone-900">{event.title}</p>
+                      {event.locationLabel ? (
+                        <p className="text-sm text-stone-500">{event.locationLabel}</p>
+                      ) : (
+                        <p className="text-sm text-stone-400">Sin ubicacion publicada</p>
+                      )}
+                    </div>
+
+                    {event.statusLabel ? (
+                      <span className="rounded-full bg-[#9b2c16] px-2.5 py-1 text-xs font-medium text-white">
+                        {event.statusLabel}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              )}
+            </article>
+          ))}
+        </div>
+      )}
     </SectionCard>
   );
 }
-

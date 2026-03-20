@@ -15,7 +15,7 @@ const fontSerif = Fraunces({
 
 export const metadata: Metadata = {
   title: "Festapp",
-  description: "Base inicial de Festapp v1 para catalogo publico y CMS basico.",
+  description: "Consulta actos de fiestas con rapidez, claridad y datos reales desde movil.",
 };
 
 export default function RootLayout({
@@ -31,4 +31,3 @@ export default function RootLayout({
     </html>
   );
 }
-
