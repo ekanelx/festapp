@@ -1,0 +1,264 @@
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-primary": "#faf7f6",
+                        "outline-variant": "#aeb4aa",
+                        "primary-container": "#e4e2e1",
+                        "surface": "#fafaf5",
+                        "on-tertiary-container": "#5a5850",
+                        "on-tertiary": "#fdf9ed",
+                        "surface-dim": "#d5dcd0",
+                        "inverse-on-surface": "#9c9d99",
+                        "primary-fixed": "#e4e2e1",
+                        "secondary-dim": "#863e1b",
+                        "inverse-surface": "#0d0f0c",
+                        "on-tertiary-fixed": "#48463e",
+                        "on-secondary-fixed": "#6d2b08",
+                        "tertiary-container": "#f2eee2",
+                        "background": "#fafaf5",
+                        "error-container": "#fe8983",
+                        "on-background": "#2e342d",
+                        "surface-container-low": "#f3f4ee",
+                        "on-primary-container": "#525151",
+                        "on-surface": "#2e342d",
+                        "inverse-primary": "#ffffff",
+                        "tertiary-dim": "#55534b",
+                        "on-primary-fixed": "#3f3f3f",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary": "#954a25",
+                        "surface-container-high": "#e5eae0",
+                        "primary-fixed-dim": "#d6d4d3",
+                        "tertiary": "#615f57",
+                        "on-secondary": "#fff7f5",
+                        "on-error-container": "#752121",
+                        "secondary-fixed": "#ffdbcd",
+                        "tertiary-fixed": "#f2eee2",
+                        "surface-bright": "#fafaf5",
+                        "on-tertiary-fixed-variant": "#65635a",
+                        "on-error": "#fff7f6",
+                        "primary-dim": "#535252",
+                        "on-primary-fixed-variant": "#5c5b5b",
+                        "outline": "#767c74",
+                        "on-secondary-fixed-variant": "#914622",
+                        "surface-container": "#ecefe7",
+                        "secondary-fixed-dim": "#ffc8b2",
+                        "on-surface-variant": "#5b6159",
+                        "on-secondary-container": "#843d1a",
+                        "surface-variant": "#dee4da",
+                        "secondary-container": "#ffdbcd",
+                        "error": "#9f403d",
+                        "error-dim": "#4e0309",
+                        "tertiary-fixed-dim": "#e3dfd4",
+                        "surface-container-highest": "#dee4da",
+                        "surface-tint": "#5f5e5e",
+                        "primary": "#5f5e5e"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body selection:bg-secondary-fixed selection:text-on-secondary-fixed">
+<!-- TopAppBar Shell -->
+<header class="fixed top-0 w-full z-50 bg-[#fafaf5]/80 backdrop-blur-xl">
+<div class="flex justify-between items-center px-6 py-4 w-full">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-stone-700">location_on</span>
+<span class="font-['Manrope'] font-black text-stone-800 tracking-tighter text-xl">Festapp</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-stone-700 hover:bg-stone-200/50 transition-colors p-2 rounded-full active:scale-95 duration-200">search</button>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-5xl mx-auto">
+<!-- Hero Section: Editorial Header -->
+<section class="mb-12">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div>
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container mb-4">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+<span class="text-[10px] uppercase tracking-widest font-bold">Edición Activa</span>
+</div>
+<h1 class="font-headline font-extrabold text-4xl md:text-6xl text-on-surface leading-none tracking-tighter mb-4">
+                        Moros y Cristianos <br/>de Elche
+                    </h1>
+<div class="flex items-center gap-4 text-on-surface-variant font-medium">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">calendar_today</span> 7 - 12 de Agosto</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">place</span> Elche, España</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Bento Grid: Live and Future -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-12">
+<!-- Lo que está pasando ahora (Featured Card) -->
+<div class="md:col-span-8 bg-surface-container-lowest rounded-xl p-8 border border-outline-variant/10 shadow-sm relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4">
+<span class="material-symbols-outlined text-secondary text-4xl opacity-20 group-hover:opacity-40 transition-opacity">live_tv</span>
+</div>
+<h3 class="font-headline font-bold text-on-surface-variant text-sm uppercase tracking-widest mb-6">Lo que está pasando ahora</h3>
+<div class="space-y-4">
+<h2 class="font-headline font-extrabold text-3xl text-on-surface">Entrada Mora</h2>
+<div class="flex flex-wrap gap-4">
+<div class="flex items-center gap-2 text-secondary font-semibold">
+<span class="material-symbols-outlined">play_circle</span>
+<span>En curso</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined">location_on</span>
+<span>Calle Corredora</span>
+</div>
+</div>
+<div class="pt-6">
+<button class="bg-secondary text-on-secondary px-6 py-3 rounded-lg font-bold text-sm tracking-wide shadow-lg shadow-secondary/20 hover:secondary-dim transition-all flex items-center gap-2">
+                            VER MAPA EN VIVO
+                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Alertas y Avisos -->
+<div class="md:col-span-4 bg-error-container/10 rounded-xl p-6 border-l-4 border-error">
+<div class="flex items-center gap-2 mb-4 text-error">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">warning</span>
+<h3 class="font-headline font-bold text-sm uppercase tracking-widest">Alertas y avisos</h3>
+</div>
+<div class="space-y-4">
+<div class="p-3 bg-white/50 rounded-lg">
+<p class="text-sm font-semibold text-on-error-container">Aforo Completo: Plaza del Congreso</p>
+<p class="text-xs text-on-surface-variant mt-1">Se recomienda utilizar rutas alternativas por Calle Ancha.</p>
+</div>
+<div class="p-3 bg-white/50 rounded-lg">
+<p class="text-sm font-semibold text-on-error-container">Cambio de Horario: Castillo</p>
+<p class="text-xs text-on-surface-variant mt-1">La embajada se retrasa 15 minutos por protocolo.</p>
+</div>
+</div>
+</div>
+<!-- Próximamente (Asymmetric Sidebar Style) -->
+<div class="md:col-span-4 bg-surface-container-low rounded-xl p-6">
+<h3 class="font-headline font-bold text-on-surface-variant text-sm uppercase tracking-widest mb-6">Próximamente</h3>
+<div class="space-y-6">
+<div class="flex gap-4">
+<div class="text-secondary font-bold text-lg tabular-nums">19:30</div>
+<div>
+<p class="font-bold text-on-surface">Embajada Mora</p>
+<p class="text-xs text-on-surface-variant">Castillo de Altamira</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="text-on-surface-variant font-bold text-lg tabular-nums">21:00</div>
+<div>
+<p class="font-bold text-on-surface">Concierto Festero</p>
+<p class="text-xs text-on-surface-variant">Hort del Xocolater</p>
+</div>
+</div>
+<button class="w-full py-3 mt-4 border border-outline-variant/30 rounded-lg text-xs font-bold uppercase tracking-widest text-on-surface-variant hover:bg-white transition-colors">Ver programa completo</button>
+</div>
+</div>
+<!-- Mapa del Recinto (Visual Anchor) -->
+<div class="md:col-span-8 bg-surface-container-highest rounded-xl overflow-hidden min-h-[300px] relative group">
+<div class="absolute inset-0 bg-stone-200">
+<img alt="Mapa de Elche" class="w-full h-full object-cover opacity-60 grayscale hover:grayscale-0 transition-all duration-700" data-alt="Map of Elche city center with festival markers" data-location="Elche" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHbJJLsrNmpT_YPMpPEZ8UYYgEHFpAxGYWpdFu8RclyXvLxlQDVWv9J1EXH2AZv7EgGFO1Y-aOM5EsIMKUc6bmwC86QFI0szGf10mHlzQ89BUl7LYT_ZO8YmqaTuZaVdGhRfvBQxnBPa_jrfWbvQCK7Yv3mK2gNxzxTfFIoZcIY9Q3XjhoZEUjDOZjhHE7T3SNr6LSw__bF2fQu5rQouayKjZ9otSJDxIcirV6hnWtWgPbqItqPZ59GK1xslmj7bwKmIHqR3tQvPE"/>
+</div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-8">
+<h3 class="font-headline font-bold text-white text-2xl mb-2">Mapa del recinto</h3>
+<p class="text-white/80 text-sm max-w-xs mb-4">Encuentra los cuartelillos, puntos de hidratación y baños públicos más cercanos.</p>
+<button class="bg-white text-on-surface px-6 py-2 rounded-lg font-bold text-xs uppercase tracking-widest shadow-xl">ABRIR INTERACTIVO</button>
+</div>
+</div>
+</div>
+<!-- Eventos Destacados: Editorial Layout -->
+<section>
+<div class="flex items-center justify-between mb-8">
+<h2 class="font-headline font-extrabold text-2xl tracking-tight text-on-surface">Eventos Destacados</h2>
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant active:scale-90 transition-transform"><span class="material-symbols-outlined">chevron_left</span></button>
+<button class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant active:scale-90 transition-transform"><span class="material-symbols-outlined">chevron_right</span></button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Destacado 1 -->
+<article class="flex flex-col group cursor-pointer">
+<div class="aspect-[4/5] rounded-xl bg-surface-container-highest overflow-hidden mb-4">
+<img alt="Desfile festival" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Traditional Spanish festival parade with ornate costumes" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCBqrgmA72rbR5lutczj9Ow5_5vkJa2pzif-q694Jg5TPuiXMmEuroF1GaZ5RA75U89Ge71UvwUACgJ1bJuhVqGOOOKSWnEV_FTyQ8vytmTS24PEDbc8iTkVyWnPB2b2ejrrJZIbYjZ3Fme_H0NsEfkoiGjTG2FjNZdrrWyazKjlmQy2C6S_JpO-Afny98UucLcTNDb-n5bjjjaWH7P1M-Pm3eliKakwg15LkOaJ57qJ395UO0AADG8_CJ0p7hzE35CysNDWoPXkQ0"/>
+</div>
+<span class="text-[10px] font-bold uppercase tracking-widest text-secondary mb-2">Gran Desfile</span>
+<h4 class="font-headline font-bold text-xl text-on-surface group-hover:text-secondary transition-colors">Entrada Cristiana</h4>
+<p class="text-sm text-on-surface-variant mt-2 line-clamp-2 leading-relaxed">El despliegue más espectacular de las huestes cristianas recorriendo las calles históricas.</p>
+</article>
+<!-- Destacado 2 -->
+<article class="flex flex-col group cursor-pointer">
+<div class="aspect-[4/5] rounded-xl bg-surface-container-highest overflow-hidden mb-4">
+<img alt="Fuegos artificiales" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Spectacular fireworks over a historical castle" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCT3rN12_5g6x97EtsCM9lKdhG_zMQEYoK09U38rUR_K2-HRQ3FtuI3xxRVaySy9WAtmfJINbHQI01tD5xgzawGYwfRMSm_EEtXSxL75ZyLcJwzlLFbyoRrRb5kUxyTfioO3NP1UIKS9uOYQZwHWR7dOfK1M_Rm4AtarMnZK1a5ebWdSUussTitEOM4vztXjwZ1hEIPvsuN5me4i1ZU9Jv_pYDo5uw-nMOG8kardxOq0RdIPFq8z4p3j0iESc-oeFUDnIX9bRRfR_0"/>
+</div>
+<span class="text-[10px] font-bold uppercase tracking-widest text-secondary mb-2">Pirotecnia</span>
+<h4 class="font-headline font-bold text-xl text-on-surface group-hover:text-secondary transition-colors">Alborada y Castillo</h4>
+<p class="text-sm text-on-surface-variant mt-2 line-clamp-2 leading-relaxed">Una noche mágica donde el cielo de Elche se ilumina en honor a la patrona.</p>
+</article>
+<!-- Destacado 3 -->
+<article class="flex flex-col group cursor-pointer">
+<div class="aspect-[4/5] rounded-xl bg-surface-container-highest overflow-hidden mb-4">
+<img alt="Música en directo" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Large concert crowd with professional stage lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDf3SojDEalJ_NS44MzbR-xFezMjNnb8PiOC2CXgfaLFDcXqqnJzXIoycvGMOH1O9XPsgj8BnGb5x6ETEo-q9Ol9rc8flEED5aJqR1szX9U-gUElAhgvNdlSGJDMXQkbcK0vY4aIeE8NL19gcAYj-2-3hBUMNkHBMxQi4b4NDSCTQoDmo-p1dKrnAIII55t6PEIU-Vog_0BPOt8dSXMkeIEQgI3RTDzPMS9haWm1DQ2I3nESYS93HmEvO4wxU8mb_NZrqtvQ_firfg"/>
+</div>
+<span class="text-[10px] font-bold uppercase tracking-widest text-secondary mb-2">Música</span>
+<h4 class="font-headline font-bold text-xl text-on-surface group-hover:text-secondary transition-colors">Noches de Kábila</h4>
+<p class="text-sm text-on-surface-variant mt-2 line-clamp-2 leading-relaxed">Conciertos y verbenas populares en los recintos festeros oficiales.</p>
+</article>
+</div>
+</section>
+</main>
+<!-- BottomNavBar Shell -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-8 pt-4 bg-[#fafaf5]/90 backdrop-blur-2xl rounded-t-3xl border-t border-stone-200/20 shadow-[0_-8px_24px_rgba(46,52,45,0.06)]">
+<!-- Explorar (Active) -->
+<a class="flex flex-col items-center justify-center text-[#954a25] bg-[#f3f4ee] rounded-2xl px-6 py-2 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">explore</span>
+<span class="font-['Inter'] font-medium text-[10px] uppercase tracking-widest">Explorar</span>
+</a>
+<!-- Mis Festivales -->
+<a class="flex flex-col items-center justify-center text-stone-400 px-6 py-2 hover:text-stone-800 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined mb-1">confirmation_number</span>
+<span class="font-['Inter'] font-medium text-[10px] uppercase tracking-widest">Mis Festivales</span>
+</a>
+<!-- Perfil -->
+<a class="flex flex-col items-center justify-center text-stone-400 px-6 py-2 hover:text-stone-800 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined mb-1">person</span>
+<span class="font-['Inter'] font-medium text-[10px] uppercase tracking-widest">Perfil</span>
+</a>
+</nav>
+<!-- Contextual FAB - Appears only on Home for adding to schedule/favorites -->
+<div class="fixed bottom-28 right-6 z-40">
+<button class="w-14 h-14 rounded-full bg-secondary text-on-secondary shadow-xl shadow-secondary/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</div>
+
+```</body></html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-primary": "#faf7f6",
+              "outline-variant": "#aeb4aa",
+              "primary-container": "#e4e2e1",
+              "surface": "#fafaf5",
+              "on-tertiary-container": "#5a5850",
+              "on-tertiary": "#fdf9ed",
+              "surface-dim": "#d5dcd0",
+              "inverse-on-surface": "#9c9d99",
+              "primary-fixed": "#e4e2e1",
+              "secondary-dim": "#863e1b",
+              "inverse-surface": "#0d0f0c",
+              "on-tertiary-fixed": "#48463e",
+              "on-secondary-fixed": "#6d2b08",
+              "tertiary-container": "#f2eee2",
+              "background": "#fafaf5",
+              "error-container": "#fe8983",
+              "on-background": "#2e342d",
+              "surface-container-low": "#f3f4ee",
+              "on-primary-container": "#525151",
+              "on-surface": "#2e342d",
+              "inverse-primary": "#ffffff",
+              "tertiary-dim": "#55534b",
+              "on-primary-fixed": "#3f3f3f",
+              "surface-container-lowest": "#ffffff",
+              "secondary": "#954a25",
+              "surface-container-high": "#e5eae0",
+              "primary-fixed-dim": "#d6d4d3",
+              "tertiary": "#615f57",
+              "on-secondary": "#fff7f5",
+              "on-error-container": "#752121",
+              "secondary-fixed": "#ffdbcd",
+              "tertiary-fixed": "#f2eee2",
+              "surface-bright": "#fafaf5",
+              "on-tertiary-fixed-variant": "#65635a",
+              "on-error": "#fff7f6",
+              "primary-dim": "#535252",
+              "on-primary-fixed-variant": "#5c5b5b",
+              "outline": "#767c74",
+              "on-secondary-fixed-variant": "#914622",
+              "surface-container": "#ecefe7",
+              "secondary-fixed-dim": "#ffc8b2",
+              "on-surface-variant": "#5b6159",
+              "on-secondary-container": "#843d1a",
+              "surface-variant": "#dee4da",
+              "secondary-container": "#ffdbcd",
+              "error": "#9f403d",
+              "error-dim": "#4e0309",
+              "tertiary-fixed-dim": "#e3dfd4",
+              "surface-container-highest": "#dee4da",
+              "surface-tint": "#5f5e5e",
+              "primary": "#5f5e5e"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      body {
+        background-color: #fafaf5;
+        color: #2e342d;
+        -webkit-font-smoothing: antialiased;
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body selection:bg-secondary-container">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#fafaf5]/80 backdrop-blur-xl">
+<div class="flex justify-between items-center px-6 py-4 w-full max-w-7xl mx-auto">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-stone-700" data-icon="location_on">location_on</span>
+<span class="font-headline font-black text-stone-800 tracking-tighter text-2xl">Festapp</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="flex items-center gap-2 px-4 py-2 bg-surface-container-low rounded-full hover:bg-stone-200/50 transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-stone-500 text-lg" data-icon="search">search</span>
+<span class="text-sm font-medium text-on-surface-variant">Buscar ciudad</span>
+</button>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 max-w-7xl mx-auto px-6">
+<!-- Hero / Featured Section -->
+<section class="mb-12">
+<div class="flex items-baseline justify-between mb-6">
+<h2 class="font-headline font-bold text-3xl tracking-tight text-on-surface">Fiestas en curso</h2>
+<div class="flex items-center gap-2">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-secondary"></span>
+</span>
+<span class="font-label text-xs uppercase tracking-widest font-semibold text-secondary">EN VIVO</span>
+</div>
+</div>
+<div class="group relative overflow-hidden rounded-xl bg-surface-container-highest shadow-[0_8px_24px_rgba(46,52,45,0.06)] transition-all hover:shadow-[0_12px_32px_rgba(46,52,45,0.1)]">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-0">
+<div class="md:col-span-7 relative h-64 md:h-[450px] overflow-hidden">
+<img alt="Festival Moros y Cristianos Elche" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Traditional Spanish festival celebration with costumes and parades" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCEAFz0N-HMn1SYvXvRbmy4N5aEreEdLaQuz2v9QJMK2v25COe2S6DPUoiEgPACpnRFRBbHTf3J2lpHdTkn260Vmr1QHFRWPCN0d0xYsoG_qhU-JnmFlO8Drj_B1-fhtBOtfiYNHyF4OlhFkFSzjfIOKeWp4WGg_I3k-yDG5XGDyYaTeqZvd2pWmSqim-nU6VC3W1hHF8IAcCuhP-Ix6RGnVHkSVr1ZAD_I2obkoymcMcdDWpvs-GvIA0LSYQGc_XeHjsdVcMEm39c"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+<div class="absolute bottom-6 left-6 inline-flex px-3 py-1 bg-secondary text-on-secondary rounded-lg text-xs font-bold uppercase tracking-wider">
+                            EN CURSO
+                        </div>
+</div>
+<div class="md:col-span-5 p-8 flex flex-col justify-center bg-surface-container-lowest">
+<div class="mb-4 flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm" data-icon="location_on">location_on</span>
+<span class="text-sm font-medium tracking-wide">Elche, Alicante</span>
+</div>
+<h3 class="font-headline font-extrabold text-4xl mb-4 leading-tight text-on-surface">Moros y Cristianos de Elche - Edición 2026</h3>
+<p class="text-on-surface-variant mb-8 leading-relaxed font-body">Sumérgete en la historia viva de Elche. Una recreación espectacular de batallas históricas, música tradicional y desfiles deslumbrantes que transforman la ciudad.</p>
+<div class="flex items-center justify-between mt-auto pt-6 border-t border-surface-container">
+<div class="flex flex-col">
+<span class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Fechas</span>
+<span class="text-lg font-bold text-on-surface">7 - 12 de Agosto</span>
+</div>
+<button class="bg-secondary text-on-secondary px-6 py-3 rounded-lg font-bold text-sm tracking-wide shadow-sm hover:brightness-110 active:scale-95 transition-all">
+                                Ver detalles
+                            </button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Upcoming Section (Asymmetric Grid) -->
+<section class="mb-16">
+<h2 class="font-headline font-bold text-2xl tracking-tight text-on-surface mb-8">Próximas ediciones</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+<!-- Card 1: Feria de Málaga -->
+<div class="flex flex-col bg-surface-container-low rounded-xl overflow-hidden hover:bg-surface-container transition-colors group">
+<div class="h-48 overflow-hidden relative">
+<img alt="Feria de Málaga" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Summer fair atmosphere with decorations and lights" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVMDCYcdF2b6cGuaReuvGEA-Pr5YfE7NIE9flQ-W7eL26jedIqOeqE0yhQ2pHux0Y-ihiVywTNAMbuv2VYxB52kNsd93xPbcNS5p94zCKBInAz60gSd6AeWiCwZnc3cBK1ekO7tGc9xTusZlC756Q5grXxL-1zdgJHG875ypfCqRFgrSiCMSvFswx_Jopot9upq9WYy5rSL_UiszJ-1RfEc7tWZlpzLXLsWtiGM-Jxhs4I1L6bmgxqsG3ACqh3y_pL5lGtisE3EUg"/>
+<div class="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full">
+<span class="text-[10px] font-black uppercase text-secondary">Agosto</span>
+</div>
+</div>
+<div class="p-6">
+<div class="flex items-center gap-2 mb-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-xs" data-icon="pin_drop">pin_drop</span>
+<span class="text-xs font-semibold tracking-wide uppercase">Málaga</span>
+</div>
+<h4 class="font-headline font-bold text-xl text-on-surface mb-2">Feria de Málaga</h4>
+<p class="text-sm text-on-surface-variant mb-6 line-clamp-2">La gran fiesta del verano en la Costa del Sol. Gastronomía, flamenco y alegría en cada rincón.</p>
+<div class="flex items-center justify-between">
+<span class="text-sm font-bold text-on-surface">15 - 22 Ago</span>
+<span class="material-symbols-outlined text-secondary hover:translate-x-1 transition-transform cursor-pointer" data-icon="arrow_forward">arrow_forward</span>
+</div>
+</div>
+</div>
+<!-- Card 2: Aste Nagusia -->
+<div class="flex flex-col bg-surface-container-low rounded-xl overflow-hidden hover:bg-surface-container transition-colors group">
+<div class="h-48 overflow-hidden relative">
+<img alt="Aste Nagusia de Bilbao" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Cultural street festival with fireworks and crowds" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCUPD8T07WPNyOi3DI1j4_Nv3nD_Ed24bF3Lthu9tBaQk2Ow2KtbmH5JPTAF6Zq6iApTGSAcegt6M69plOQae61ZukwFI81mn1jM0FN7PWs3o4BhABaJIuTpl4syug0oJ7DC-4-sZEet7RgskhbcbAspee4RHwl1qLfX2TYe8oKy04n4fQ4SgbBPoPvPCA55wpDoaw6lQiomHk7TSjudeRbVdKZVkpufuONSPUldWozCAnEFFCHW10eYT558vRx2rnSsrW872yy-_4"/>
+<div class="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full">
+<span class="text-[10px] font-black uppercase text-secondary">Agosto</span>
+</div>
+</div>
+<div class="p-6">
+<div class="flex items-center gap-2 mb-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-xs" data-icon="pin_drop">pin_drop</span>
+<span class="text-xs font-semibold tracking-wide uppercase">Bilbao</span>
+</div>
+<h4 class="font-headline font-bold text-xl text-on-surface mb-2">Aste Nagusia de Bilbao</h4>
+<p class="text-sm text-on-surface-variant mb-6 line-clamp-2">La Semana Grande bilbaína. Conciertos, fuegos artificiales y cultura vasca en su máxima expresión.</p>
+<div class="flex items-center justify-between">
+<span class="text-sm font-bold text-on-surface">22 - 30 Ago</span>
+<span class="material-symbols-outlined text-secondary hover:translate-x-1 transition-transform cursor-pointer" data-icon="arrow_forward">arrow_forward</span>
+</div>
+</div>
+</div>
+<!-- Card 3: Featured Upcoming / Newsletter -->
+<div class="bg-[#954a25] rounded-xl p-8 flex flex-col justify-between text-on-secondary shadow-lg">
+<div>
+<span class="material-symbols-outlined text-4xl mb-4" data-icon="notifications_active">notifications_active</span>
+<h4 class="font-headline font-bold text-2xl leading-tight mb-4">No te pierdas ninguna edición</h4>
+<p class="text-on-secondary/80 text-sm leading-relaxed mb-6">Recibe alertas personalizadas de tus fiestas favoritas y descubre nuevos eventos antes que nadie.</p>
+</div>
+<button class="w-full bg-on-secondary text-secondary py-3 rounded-lg font-bold text-sm uppercase tracking-widest hover:bg-white transition-colors">
+                        Activar alertas
+                    </button>
+</div>
+</div>
+</section>
+<!-- Newsletter / Editorial Block -->
+<section class="mb-12 bg-surface-container-high rounded-2xl p-10 flex flex-col md:flex-row items-center gap-10">
+<div class="flex-1">
+<h3 class="font-headline font-extrabold text-3xl text-on-surface mb-4">Guía Editorial 2026</h3>
+<p class="text-on-surface-variant leading-relaxed">Nuestros expertos locales han seleccionado los 10 festivales imprescindibles para este año. Descarga nuestra guía exclusiva de gastronomía y tradiciones locales.</p>
+</div>
+<div class="flex-shrink-0 w-full md:w-auto">
+<button class="w-full md:w-auto px-8 py-4 border-2 border-primary text-primary font-bold rounded-lg hover:bg-primary hover:text-white transition-all">
+                    Descargar Guía Gratis
+                </button>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-8 pt-4 bg-[#fafaf5]/90 backdrop-blur-2xl shadow-[0_-8px_24px_rgba(46,52,45,0.06)] border-t border-stone-200/20">
+<div class="flex flex-col items-center justify-center text-[#954a25] bg-[#f3f4ee] rounded-2xl px-6 py-2 active:scale-90 transition-transform duration-150">
+<span class="material-symbols-outlined" data-icon="explore" style="font-variation-settings: 'FILL' 1;">explore</span>
+<span class="font-['Inter'] font-medium text-[10px] uppercase tracking-widest mt-1">Explorar</span>
+</div>
+<div class="flex flex-col items-center justify-center text-stone-400 px-6 py-2 hover:text-stone-800 active:scale-90 transition-transform duration-150">
+<span class="material-symbols-outlined" data-icon="confirmation_number">confirmation_number</span>
+<span class="font-['Inter'] font-medium text-[10px] uppercase tracking-widest mt-1">Mis Festivales</span>
+</div>
+<div class="flex flex-col items-center justify-center text-stone-400 px-6 py-2 hover:text-stone-800 active:scale-90 transition-transform duration-150">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-['Inter'] font-medium text-[10px] uppercase tracking-widest mt-1">Perfil</span>
+</div>
+</nav>
+</body></html>
