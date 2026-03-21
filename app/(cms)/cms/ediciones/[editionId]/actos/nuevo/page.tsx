@@ -4,8 +4,10 @@ import { notFound } from "next/navigation";
 import { CmsBreadcrumbs } from "@/components/cms/cms-breadcrumbs";
 import { Callout } from "@/components/shared/callout";
 import { CheckboxField, FormField } from "@/components/shared/form-field";
+import { FormSubmitButton } from "@/components/shared/form-submit-button";
+import { MediaImageField } from "@/components/shared/media-image-field";
 import { SectionCard } from "@/components/shared/section-card";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -88,7 +90,7 @@ export default async function CmsCreateEventPage({
         </Callout>
       ) : null}
 
-      <form action={createCmsEventAction} className="mt-5 space-y-5">
+      <form action={createCmsEventAction} className="mt-5 space-y-5" encType="multipart/form-data">
         <input type="hidden" name="edition_id" value={edition.id} />
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -155,10 +157,13 @@ export default async function CmsCreateEventPage({
           />
         </div>
 
+        <MediaImageField
+          previewTitle="Portada del acto"
+          emptyLabel="Todavia no hay una portada cargada para este acto."
+        />
+
         <div className="flex justify-end">
-          <Button type="submit" size="lg">
-            Crear acto
-          </Button>
+          <FormSubmitButton size="lg" idleLabel="Crear acto" pendingLabel="Creando acto..." />
         </div>
       </form>
     </SectionCard>

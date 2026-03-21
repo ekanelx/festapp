@@ -1,8 +1,17 @@
 import Link from "next/link";
 
-import { PublicEditionNav } from "@/components/public/public-edition-nav";
 import { EditionOverview } from "@/components/public/edition-overview";
+import {
+  PublicEntityMedia,
+  PublicHeroBlock,
+  PublicInfoPanel,
+  PublicMetaRow,
+  PublicStoryCard,
+} from "@/components/public/public-editorial";
+import { PublicEditionNav } from "@/components/public/public-edition-nav";
 import { SectionCard } from "@/components/shared/section-card";
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { getPublicEditionPageData } from "@/lib/public/queries";
 
 type EditionHomePageProps = {
@@ -24,11 +33,12 @@ export default async function EditionHomePage({ params }: EditionHomePageProps) 
   if (error) {
     return (
       <SectionCard
+        variant="editorial"
         eyebrow="Error"
         title="No se ha podido cargar esta edicion"
-        description="La home publica ya depende de Supabase real y la carga ha fallado."
+        description="La home de edicion ya depende de Supabase real."
       >
-        <p className="text-sm text-stone-600">{error}</p>
+        <p className="text-sm text-[var(--muted)]">{error}</p>
       </SectionCard>
     );
   }
@@ -36,6 +46,7 @@ export default async function EditionHomePage({ params }: EditionHomePageProps) 
   if (!edition) {
     return (
       <SectionCard
+        variant="editorial"
         eyebrow="No disponible"
         title="No encontramos esa edicion publica"
         description="Comprueba el enlace o publica la edicion correcta antes de compartirla."
@@ -48,125 +59,170 @@ export default async function EditionHomePage({ params }: EditionHomePageProps) 
   const changedEventsPreview = edition.changedEvents.slice(0, 3);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PublicEditionNav
         festivalSlug={edition.festivalSlug}
         editionSlug={edition.editionSlug}
         current="home"
       />
 
-      <section className="rounded-[32px] border border-black/8 bg-white/75 p-6 shadow-[0_30px_90px_-55px_rgba(73,44,24,0.7)]">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">Edicion activa</p>
-        <h1 className="mt-3 font-serif text-4xl text-stone-950">
-          {edition.editionName}
-        </h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600">
-          {edition.festivalName}
-          {edition.festivalCity ? ` · ${edition.festivalCity}` : ""}
-        </p>
+      <PublicHeroBlock
+        eyebrow="Edicion publica"
+        title={
+          <>
+            {edition.festivalName}
+            <br />
+            <span className="text-[0.72em]">{edition.editionName}</span>
+          </>
+        }
+        description="La portada editorial de esta edicion prioriza contexto, agenda y cambios relevantes."
+        media={
+          <PublicEntityMedia
+            asset={edition.coverMedia}
+            tone="night"
+            badge={edition.temporalLabel ?? "Edicion"}
+            subtitle={edition.festivalCity ?? "Festapp"}
+            title={edition.editionName}
+            className="min-h-[20rem] sm:min-h-[24rem]"
+            priority
+          />
+        }
+        meta={
+          <PublicMetaRow
+            items={[
+              edition.dateRangeLabel,
+              edition.festivalCity,
+              `${edition.allEvents.length} actos publicados`,
+            ]}
+          />
+        }
+        actions={
+          <>
+            <Link
+              href={`/${edition.festivalSlug}/${edition.editionSlug}/agenda`}
+              className={buttonVariants({ variant: "accent", size: "lg" })}
+            >
+              Abrir agenda
+            </Link>
+            {edition.temporalLabel ? <Badge variant="soft">{edition.temporalLabel}</Badge> : null}
+          </>
+        }
+        aside={
+          <div className="grid gap-3 sm:grid-cols-3">
+            <PublicInfoPanel
+              label="Hoy"
+              value={edition.todayEvents.length}
+              description="Actos visibles para hoy."
+            />
+            <PublicInfoPanel
+              label="Con cambios"
+              value={edition.changedEvents.length}
+              description="Actualizados o cancelados."
+            />
+            <PublicInfoPanel
+              label="Ciudad"
+              value={edition.festivalCity ?? "Sin ciudad"}
+              description="Contexto del festival."
+            />
+          </div>
+        }
+      />
 
-        <div className="mt-5 flex flex-wrap gap-3 text-sm text-stone-600">
-          <span className="rounded-full bg-[#fff3e6] px-3 py-1.5">{edition.dateRangeLabel}</span>
-          <span className="rounded-full bg-white px-3 py-1.5">
-            {edition.allEvents.length} actos publicados
-          </span>
-        </div>
-
-        <div className="mt-5 flex flex-wrap gap-3">
-          <Link
-            href={`/${edition.festivalSlug}/${edition.editionSlug}/agenda`}
-            className="rounded-full bg-[#9b2c16] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#7f200f]"
-          >
-            Abrir agenda
-          </Link>
-        </div>
-      </section>
-
-      {changedEventsPreview.length > 0 ? (
+      <div className="grid gap-5 xl:grid-cols-[0.82fr_1.18fr]">
         <SectionCard
-          eyebrow="Cambios"
-          title="Cambios relevantes"
-          description="Solo se muestran actos actualizados o cancelados para detectarlos rapido."
+          variant="editorial"
+          title="Contexto rapido"
+          description="Lo esencial antes de entrar al programa."
+          contentClassName="space-y-3"
         >
-          <div className="space-y-3">
-            {changedEventsPreview.map((event) => (
-              <Link
+          <PublicInfoPanel label="Festival" value={edition.festivalName} />
+          <PublicInfoPanel label="Fechas" value={edition.dateRangeLabel} />
+          <PublicInfoPanel
+            label="Siguiente paso"
+            value="Consulta la agenda"
+            description="El flujo principal de la app publica sigue entrando por resumen y baja a agenda y detalle."
+          />
+        </SectionCard>
+
+        {changedEventsPreview.length > 0 ? (
+          <SectionCard
+            variant="soft"
+            title="Cambios relevantes"
+            description="Solo aparecen actos con cambios que merecen atencion."
+            contentClassName="grid gap-4 md:grid-cols-3"
+          >
+            {changedEventsPreview.map((event, index) => (
+              <PublicStoryCard
                 key={event.id}
                 href={`/${edition.festivalSlug}/${edition.editionSlug}/actos/${event.slug}`}
-                className="block rounded-3xl border border-[#9b2c16]/12 bg-[#fff5ef] p-4 transition hover:border-[#9b2c16]/25 hover:bg-white"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <p className="font-semibold text-stone-950">{event.title}</p>
-                    <p className="text-sm text-stone-600">
-                      {event.startsAtDayLabel} · {event.startsAtTimeLabel}
-                    </p>
-                    {event.changeNote ? (
-                      <p className="pt-1 text-sm leading-5 text-[#8c2b15]">{event.changeNote}</p>
-                    ) : null}
-                  </div>
-
-                  {event.statusLabel ? (
-                    <span className="rounded-full bg-[#9b2c16] px-2.5 py-1 text-xs font-medium text-white">
-                      {event.statusLabel}
-                    </span>
-                  ) : null}
-                </div>
-              </Link>
+                eyebrow={event.statusLabel ?? "Acto"}
+                title={event.title}
+                description={event.changeNote ?? "Consulta el detalle actualizado del acto."}
+                meta={<PublicMetaRow items={[event.startsAtDayLabel, event.startsAtTimeLabel, event.locationLabel]} />}
+                media={
+                  <PublicEntityMedia
+                    asset={event.coverMedia}
+                    tone={index === 0 ? "terracotta" : "stone"}
+                    subtitle={edition.festivalName}
+                    title={event.title}
+                    className="min-h-[10rem]"
+                    sizes="(min-width: 768px) 30vw, 100vw"
+                  />
+                }
+                ctaLabel="Ver cambio"
+              />
             ))}
-          </div>
-        </SectionCard>
-      ) : null}
+          </SectionCard>
+        ) : (
+          <SectionCard
+            variant="soft"
+            title="Sin cambios relevantes"
+            description="La edicion no muestra actos actualizados ni cancelados ahora mismo."
+          />
+        )}
+      </div>
 
       {todayPreview.length > 0 ? (
         <EditionOverview
           title="Hoy"
-          description="Los actos de hoy son lo primero que deberias ver al entrar."
+          description="La agenda de hoy es lo primero que deberias ver al entrar."
           emptyMessage="Hoy no hay actos publicados para esta edicion."
           events={todayPreview}
           festivalSlug={edition.festivalSlug}
           editionSlug={edition.editionSlug}
         />
+      ) : nextEvent ? (
+        <SectionCard
+          variant="editorial"
+          title="Proximo acto"
+          description="Si hoy no hay actos, adelantamos el siguiente ya publicado."
+          contentClassName="space-y-3"
+        >
+          <PublicStoryCard
+            href={`/${edition.festivalSlug}/${edition.editionSlug}/actos/${nextEvent.slug}`}
+            eyebrow={edition.festivalName}
+            title={nextEvent.title}
+            description={nextEvent.changeNote ?? "Consulta el detalle para ver horario, ubicacion y estado."}
+            meta={<PublicMetaRow items={[nextEvent.startsAtDayLabel, nextEvent.startsAtTimeLabel, nextEvent.locationLabel]} />}
+            media={
+              <PublicEntityMedia
+                asset={nextEvent.coverMedia}
+                tone="stone"
+                subtitle="Siguiente en agenda"
+                title={nextEvent.title}
+                className="min-h-[12rem]"
+                sizes="(min-width: 1280px) 48vw, 100vw"
+              />
+            }
+            ctaLabel="Abrir acto"
+          />
+        </SectionCard>
       ) : (
         <SectionCard
-          eyebrow="Hoy"
-          title="Hoy no hay actos publicados"
-          description={
-            nextEvent
-              ? "El siguiente acto ya publicado queda destacado para que no tengas que abrir mas pantallas."
-              : "Todavia no hay un siguiente acto publicado para esta edicion."
-          }
-        >
-          {nextEvent ? (
-            <article className="rounded-3xl border border-black/8 bg-[#fff9f3] p-4">
-              <div className="grid grid-cols-[72px_1fr] gap-4">
-                <div className="rounded-2xl bg-white px-2 py-3 text-center">
-                  <p className="text-2xl font-semibold leading-none text-stone-950">
-                    {nextEvent.startsAtTimeLabel}
-                  </p>
-                  <p className="mt-2 text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
-                    {nextEvent.startsAtDayLabel}
-                  </p>
-                </div>
-
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <p className="font-semibold text-stone-900">{nextEvent.title}</p>
-                    <p className="text-sm text-stone-500">
-                      {nextEvent.locationLabel ?? "Ubicacion por confirmar"}
-                    </p>
-                  </div>
-
-                  {nextEvent.statusLabel ? (
-                    <span className="rounded-full bg-[#9b2c16] px-2.5 py-1 text-xs font-medium text-white">
-                      {nextEvent.statusLabel}
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-            </article>
-          ) : null}
-        </SectionCard>
+          variant="editorial"
+          title="Sin actos visibles por ahora"
+          description="Todavia no hay un siguiente acto publicado para esta edicion."
+        />
       )}
     </div>
   );

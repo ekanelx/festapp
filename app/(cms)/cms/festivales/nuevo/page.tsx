@@ -4,8 +4,10 @@ import { CmsBreadcrumbs } from "@/components/cms/cms-breadcrumbs";
 import { CmsPageHeader } from "@/components/cms/cms-page-header";
 import { Callout } from "@/components/shared/callout";
 import { FormField } from "@/components/shared/form-field";
+import { FormSubmitButton } from "@/components/shared/form-submit-button";
+import { MediaImageField } from "@/components/shared/media-image-field";
 import { SectionCard } from "@/components/shared/section-card";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,7 +55,7 @@ export default async function CmsCreateFestivalPage({
       >
         {messages?.error ? <Callout variant="error">{messages.error}</Callout> : null}
 
-        <form action={createFestivalAction} className="space-y-5">
+        <form action={createFestivalAction} className="space-y-5" encType="multipart/form-data">
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField label="Nombre" className="sm:col-span-2">
               <Input name="name" />
@@ -84,10 +86,13 @@ export default async function CmsCreateFestivalPage({
             </FormField>
           </div>
 
+          <MediaImageField
+            previewTitle="Portada del festival"
+            emptyLabel="Todavia no hay una portada cargada para este festival."
+          />
+
           <div className="flex justify-end">
-            <Button type="submit" size="lg">
-              Crear festival
-            </Button>
+            <FormSubmitButton size="lg" idleLabel="Crear festival" pendingLabel="Creando festival..." />
           </div>
         </form>
       </SectionCard>

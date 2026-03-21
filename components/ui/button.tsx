@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes } from "react";
 
 import { cn } from "@/lib/utils";
 
-type ButtonVariant = "default" | "outline" | "ghost" | "link" | "danger";
+type ButtonVariant = "default" | "outline" | "ghost" | "link" | "danger" | "accent";
 type ButtonSize = "sm" | "default" | "lg";
 
 const buttonVariantStyles: Record<ButtonVariant, string> = {
@@ -14,6 +14,8 @@ const buttonVariantStyles: Record<ButtonVariant, string> = {
     "ui-button-ghost bg-transparent hover:bg-black/6 focus-visible:ring-[var(--focus-ring)]",
   link: "ui-button-link min-h-0 rounded-none bg-transparent px-0 py-0 hover:underline underline-offset-4 focus-visible:ring-[var(--focus-ring)]",
   danger: "ui-button-danger border border-[color:var(--danger)] bg-[var(--danger)] shadow-[0_16px_32px_-18px_rgba(155,44,22,0.7)] hover:bg-[var(--accent-hover)] focus-visible:ring-[var(--focus-ring)]",
+  accent:
+    "ui-button-accent border border-[#7e2b14] bg-[image:var(--accent-gradient)] shadow-[0_18px_30px_-18px_rgba(140,43,21,0.7)] hover:brightness-[1.04] hover:shadow-[0_22px_36px_-22px_rgba(140,43,21,0.78)] focus-visible:ring-[var(--focus-ring)]",
 };
 
 const buttonSizeStyles: Record<ButtonSize, string> = {
@@ -39,7 +41,7 @@ export function buttonVariants({
   );
 }
 
-type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
   size?: ButtonSize;
 };

@@ -193,3 +193,29 @@ Los cambios nuevos deben venir de necesidades observadas durante el trabajo, no 
 
 **Cuándo revisarla**  
 Si el sistema deja de ser útil o empieza a crecer sin control.
+
+---
+
+### [2026-03-20] — Festapp usa una capa media minima basada en Storage + media_assets
+
+**Decisión**  
+La primera version de imagenes en Festapp se resuelve con un bucket publico unico `media` en Supabase Storage, una tabla `media_assets` con metadata minima y una FK `cover_media_id` en `festivals`, `editions` y `events`.
+
+**Contexto**  
+El producto ya tenia CMS y app publica operativos, pero seguia usando placeholders visuales y no disponia de una base real para subir, relacionar y servir imagenes.
+
+**Motivo**  
+Hacia falta resolver una portada principal por entidad con el menor numero de piezas posible, sin abrir todavia una media library, galerias, cropper ni una arquitectura pesada de assets.
+
+**Implicaciones**  
+- La organizacion fisica de archivos queda por prefijos de entidad dentro del bucket:
+  - `festivals/<id>/cover/...`
+  - `editions/<id>/cover/...`
+  - `events/<id>/cover/...`
+- La metadata util vive en SQL y el binario vive en Storage.
+- El CMS edita la portada desde los formularios existentes, no desde una libreria separada.
+- La app publica consume la URL publica resultante y cae a fallback editorial cuando falta imagen.
+- La futura herencia de portada de festival hacia edicion queda preparada, pero no activada por defecto en esta fase.
+
+**Cuándo revisarla**  
+Si Festapp necesita reutilizacion de assets entre entidades, derivados de imagen, limpieza automatica de huerfanos o una media library editorial real.

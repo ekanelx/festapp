@@ -1088,3 +1088,183 @@ Modificar plantillas AGENTS antes de expandir esta convención a más repos.
 ### Siguiente paso recomendado
 
 - Hacer revision visual real en navegador del CMS ya afinado para ajustar solo detalles finos de espaciado o copy si aparecieran en uso, sin reabrir una nueva capa de rediseño.
+
+---
+
+## Festapp handoff 2026-03-20 Refinado publico inspirado en Stitch
+
+### Hecho
+
+- Se ha refinado la app publica sobre la base compartida del design system, sin crear una capa visual paralela.
+- Las tres pantallas objetivo ya usan una direccion editorial mas calmada y premium funcional:
+  - `/`
+  - `/:festivalSlug/:editionSlug`
+  - `/:festivalSlug/:editionSlug/actos/:eventSlug`
+- La traduccion sistemica aplicada ha sido:
+  - primitives existentes:
+    - `Card`
+    - `Button`
+    - `Badge`
+    - `SectionCard`
+  - nuevas variantes del DS:
+    - `Card.editorial`
+    - `Card.soft`
+    - `Card.strong`
+    - `Button.accent`
+    - `Badge.accent`
+    - `Badge.soft`
+  - componentes publicos reutilizables:
+    - `PublicHeroBlock`
+    - `PublicMediaPlaceholder`
+    - `PublicMetaRow`
+    - `PublicInfoPanel`
+    - `PublicStoryCard`
+- `SiteHeader` y `SiteFooter` se han alineado con la direccion publica refinada usando la misma base de botones y superficies.
+- `PublicEditionNav` pasa a una navegacion flotante ligera con la misma semantica de variantes que el resto del sistema.
+- `EditionOverview` deja atras parte del estilo inline y se apoya en componentes publicos/shared para mantener coherencia con home, resumen y detalle.
+- `lib/public/queries.ts` expone solo el contexto adicional minimo necesario para esta capa visual:
+  - `temporalLabel` en la home de edicion
+  - `festivalCity` y `editionDateRangeLabel` en detalle de acto
+
+### Decision visual clave
+
+- Stitch usa fotografia editorial en hero y cards, pero el producto real no tiene hoy imagen publica en estas queries.
+- En lugar de inventar imagenes falsas o meter mocks visuales, se ha creado `PublicMediaPlaceholder`:
+  - funciona como activo editorial reusable
+  - mantiene el ritmo visual y las capas de Stitch
+  - evita prometer un contenido multimedia que el producto real aun no ofrece
+
+### Lo que no se ha copiado literalmente
+
+- No se ha copiado el HTML de Stitch.
+- No se han anadido buscadores, bottom nav, mapas interactivos, carruseles ni CTA de marketing que no existan en Festapp.
+- No se ha llevado al sistema la regla extrema de "cero borde" de forma literal:
+  - se ha aproximado con variantes `editorial` y `soft`
+  - se mantienen bordes y sombras donde la claridad operativa del producto lo sigue agradeciendo
+
+### Compatibilidad con el CMS
+
+- Los nuevos tokens y variantes amplian la foundation existente en vez de bifurcarla.
+- El CMS sigue apoyandose en `default`, `outline`, `ghost` y `link`; no se ha cambiado su jerarquia ni su shell.
+- Las variantes nuevas se usan principalmente en la capa publica y no rompen el output actual del CMS.
+
+### Validacion hecha
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run build`
+
+### Siguiente paso recomendado
+
+- Revisar visualmente tambien `/agenda` para decidir si conviene llevar el mismo refinado editorial a ese listado en una pasada corta y contenida, ahora que la base publica ya esta preparada.
+
+---
+
+## Festapp handoff 2026-03-20 Soporte real de imagenes v1
+
+### Hecho
+
+- Se ha creado la migracion `supabase/migrations/20260320110000_add_media_assets_and_cover_images.sql`.
+- La base minima de media queda asi:
+  - bucket publico `media` en Supabase Storage
+  - tabla relacional `media_assets`
+  - FK `cover_media_id` en `festivals`, `editions` y `events`
+- La estructura de almacenamiento queda organizada por entidad:
+  - `festivals/<festivalId>/cover/<mediaId>.<ext>`
+  - `editions/<editionId>/cover/<mediaId>.<ext>`
+  - `events/<eventId>/cover/<mediaId>.<ext>`
+- Se han anadido policies minimas para:
+  - lectura publica de `media_assets`
+  - gestion de `media_assets` por usuarios internos
+  - lectura publica de objetos del bucket `media`
+  - upload/update/delete de objetos del bucket `media` por usuarios internos
+- Existe ya una capa compartida de media en:
+  - `lib/media/utils.ts`
+  - `lib/media/server.ts`
+- El CMS soporta portada en alta/edicion de:
+  - festival
+  - edicion
+  - acto
+- El patron UX de CMS ya incluye:
+  - preview actual
+  - preview local antes de guardar
+  - upload
+  - reemplazo
+  - eliminacion
+  - ayuda breve de formatos y peso
+  - estado pending durante guardado
+  - error visible si falla validacion o almacenamiento
+- La app publica consume imagen real donde toca:
+  - `/` usa portada de festival en la home global
+  - `/:festivalSlug/:editionSlug` usa portada propia de la edicion
+  - `/:festivalSlug/:editionSlug/actos/:eventSlug` usa portada propia del acto
+  - las cards de cambios/proximo acto en home de edicion ya aprovechan portada de acto si existe
+- Si falta imagen, el layout no se rompe:
+  - se mantiene el bloque editorial con fallback visual reutilizable
+  - no aparecen huecos vacios ni cajas rotas
+- `next.config.ts` ya permite servir imagenes remotas desde Supabase Storage.
+- Validacion completada:
+  - `npm run typecheck`
+  - `npm run lint`
+  - `npm run build`
+
+### Pendiente inmediato
+
+- Aplicar la migracion nueva en el proyecto Supabase real antes de usar el flujo en entorno compartido.
+- Hacer smoke visual real con contenidos e imagenes subidas desde CMS.
+
+### Riesgos abiertos o fase 2
+
+- La herencia `edicion -> festival` no se ha activado todavia; hoy una edicion sin portada usa fallback visual.
+- No existe todavia limpieza automatica de assets huerfanos cuando se elimina una entidad completa.
+- No hay transformaciones, resize, crop ni derivados responsive.
+- No hay media library, galeria ni reutilizacion de assets entre entidades.
+
+### Siguiente paso recomendado
+
+- Aplicar la migracion en Supabase real y hacer una pasada corta de QA visual en CMS y front publico con imagenes reales antes de abrir una fase 2 de herencia o limpieza automatica.
+
+---
+
+## Festapp handoff 2026-03-21 Validacion real de cierre fase 1 de imagenes
+
+### Validacion real hecha
+
+- Se ha comprobado el estado remoto usando `SUPABASE_SERVICE_ROLE_KEY` del entorno local, sin tocar contenido editorial.
+- El proyecto real sigue sin tener aplicada la fase 1 completa de imagenes:
+  - `cover_media_id` no existe aun en `festivals`
+  - `cover_media_id` no existe aun en `editions`
+  - `cover_media_id` no existe aun en `events`
+  - el bucket `media` no existe aun
+  - por tanto los joins `cover_media -> media_assets` fallan hoy en remoto si no hay fallback
+- El intento de aplicar por CLI no ha podido completarse desde esta maquina por bloqueo operativo real:
+  - `npx supabase migration list` falla por ausencia de `SUPABASE_ACCESS_TOKEN`
+  - `npx supabase db push --db-url <pooler-url>` falla por autenticacion invalida del password contenido ahi
+
+### Ajustes menores aplicados
+
+- La migracion `supabase/migrations/20260320110000_add_media_assets_and_cover_images.sql` ahora es mucho mas segura para rollout:
+  - `create table if not exists`
+  - `add column if not exists`
+  - `create index if not exists`
+  - policies creadas solo si faltan
+  - bucket `media` con `upsert`
+- Los selects de `cover_media` ya usan hints explicitos de FK para no depender de inferencia implicita:
+  - `festivals_cover_media_id_fkey`
+  - `editions_cover_media_id_fkey`
+  - `events_cover_media_id_fkey`
+- Las queries publicas siguen funcionando aunque el entorno remoto aun no tenga la migracion completa:
+  - hacen fallback a selects sin media si detectan schema incompleto
+- El CMS tambien gana fallback de lectura en selects criticos para no romperse por la ausencia temporal de relaciones de media durante el rollout.
+- La capa de media devuelve mensajes de error mas accionables cuando faltan `media_assets` o el bucket `media`.
+
+### Estado despues de esta pasada
+
+- `npm run typecheck` pasa
+- `npm run lint` pasa
+- `npm run build` pasa
+- La fase 1 queda lista para probar en cuanto se aplique correctamente la migracion en Supabase real.
+
+### Siguiente paso recomendado
+
+- Obtener acceso valido de CLI o password correcto de base de datos, aplicar la migracion de imagenes en remoto y ejecutar el smoke test manual de CMS + app publica con imagenes reales.

@@ -2,11 +2,27 @@ import type { HTMLAttributes } from "react";
 
 import { cn } from "@/lib/utils";
 
-export function Card({ className, ...props }: HTMLAttributes<HTMLElement>) {
+type CardVariant = "default" | "editorial" | "soft" | "strong";
+
+const cardVariantStyles: Record<CardVariant, string> = {
+  default:
+    "border border-[color:var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] backdrop-blur",
+  editorial:
+    "border-transparent bg-[var(--surface-raised)] shadow-[var(--shadow-ambient)] backdrop-blur",
+  soft: "border-transparent bg-[var(--surface-soft)] shadow-none",
+  strong: "border-transparent bg-[var(--surface-strong)] shadow-[var(--shadow-ambient)]",
+};
+
+type CardProps = HTMLAttributes<HTMLElement> & {
+  variant?: CardVariant;
+};
+
+export function Card({ className, variant = "default", ...props }: CardProps) {
   return (
     <section
       className={cn(
-        "rounded-[var(--radius-xl)] border border-[color:var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] backdrop-blur",
+        "rounded-[var(--radius-xl)]",
+        cardVariantStyles[variant],
         className,
       )}
       {...props}

@@ -1,11 +1,22 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { EventStatus } from "@/lib/domain/types";
+import {
+  isMissingMediaSchemaError,
+  resolveMediaAsset,
+  type MediaAsset,
+  type RawMediaAssetRelation,
+} from "@/lib/media/utils";
 
 type PublicFestivalRow = {
   id: string;
   name: string;
   slug: string;
   city: string | null;
+  coverMedia: MediaAsset | null;
+};
+
+type RawPublicFestivalRow = Omit<PublicFestivalRow, "coverMedia"> & {
+  cover_media: RawMediaAssetRelation;
 };
 
 type PublicEditionRow = {
@@ -16,6 +27,11 @@ type PublicEditionRow = {
   starts_on: string;
   ends_on: string;
   timezone: string;
+  coverMedia: MediaAsset | null;
+};
+
+type RawPublicEditionRow = Omit<PublicEditionRow, "coverMedia"> & {
+  cover_media: RawMediaAssetRelation;
 };
 
 type RawLocationRecord = {
@@ -35,6 +51,7 @@ type PublicEventRow = {
   change_note?: string | null;
   location_pending: boolean;
   location: RawLocationRelation;
+  cover_media: RawMediaAssetRelation;
 };
 
 type PublicEventDetailRow = {
@@ -46,6 +63,7 @@ type PublicEventDetailRow = {
   location_pending: boolean;
   change_note: string | null;
   location: RawLocationRelation;
+  cover_media: RawMediaAssetRelation;
 };
 
 export type PublicEditionRoute = {
@@ -65,6 +83,7 @@ export type PublicEventSummary = {
   locationLabel: string | null;
   statusLabel: string | null;
   changeNote: string | null;
+  coverMedia: MediaAsset | null;
 };
 
 export type PublicEditionPageData = {
@@ -75,6 +94,8 @@ export type PublicEditionPageData = {
   editionSlug: string;
   year: number;
   dateRangeLabel: string;
+  temporalLabel: string | null;
+  coverMedia: MediaAsset | null;
   todayEvents: PublicEventSummary[];
   upcomingEvents: PublicEventSummary[];
   allEvents: PublicEventSummary[];
@@ -91,13 +112,16 @@ export type PublicHomeEditionItem = {
   dateRangeLabel: string;
   temporalLabel: string;
   publishedEventsCount: number;
+  festivalCoverMedia: MediaAsset | null;
 };
 
 export type PublicEventDetailData = {
   festivalName: string;
   festivalSlug: string;
+  festivalCity: string | null;
   editionName: string;
   editionSlug: string;
+  editionDateRangeLabel: string;
   title: string;
   status: EventStatus;
   startsAtIso: string;
@@ -111,6 +135,7 @@ export type PublicEventDetailData = {
   statusLabel: string | null;
   statusNote: string | null;
   shortDescription: string | null;
+  coverMedia: MediaAsset | null;
 };
 
 type QueryState<T> = {
@@ -268,6 +293,7 @@ function mapEvent(row: PublicEventRow, timeZone: string): PublicEventSummary {
     locationLabel: locationName ?? (row.location_pending ? "Ubicacion por confirmar" : null),
     statusLabel: getUserStatusLabel(row.status),
     changeNote: null,
+    coverMedia: resolveMediaAsset(row.cover_media),
   };
 }
 
@@ -281,8 +307,10 @@ function mapEventDetail(
   return {
     festivalName: festival.name,
     festivalSlug: festival.slug,
+    festivalCity: festival.city ?? null,
     editionName: edition.name,
     editionSlug: edition.slug,
+    editionDateRangeLabel: formatEditionDateRange(edition.starts_on, edition.ends_on, edition.timezone),
     title: row.title,
     status: row.status,
     startsAtIso: row.starts_at,
@@ -298,6 +326,25 @@ function mapEventDetail(
     statusLabel: getUserStatusLabel(row.status),
     statusNote: getUserStatusNote(row.status, row.change_note),
     shortDescription: row.short_description,
+    coverMedia: resolveMediaAsset(row.cover_media),
+  };
+}
+
+function mapFestival(row: RawPublicFestivalRow): PublicFestivalRow {
+  const { cover_media, ...festival } = row;
+
+  return {
+    ...festival,
+    coverMedia: resolveMediaAsset(cover_media),
+  };
+}
+
+function mapEdition(row: RawPublicEditionRow): PublicEditionRow {
+  const { cover_media, ...edition } = row;
+
+  return {
+    ...edition,
+    coverMedia: resolveMediaAsset(cover_media),
   };
 }
 
@@ -340,17 +387,33 @@ function getEditionTemporalLabel(
 async function getFestivalBySlug(festivalSlug: string): Promise<QueryState<PublicFestivalRow>> {
   try {
     const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase
+    const primary = await supabase
       .from("festivals")
-      .select("id,name,slug,city")
+      .select(
+        "id,name,slug,city,cover_media:media_assets!festivals_cover_media_id_fkey(id,bucket_name,storage_path,file_name,mime_type,size_bytes,width,height,alt_text)",
+      )
       .eq("slug", festivalSlug)
       .maybeSingle();
+
+    let error = primary.error;
+    let data: RawPublicFestivalRow | null = primary.data as RawPublicFestivalRow | null;
+
+    if (isMissingMediaSchemaError(primary.error)) {
+      const fallback = await supabase
+        .from("festivals")
+        .select("id,name,slug,city")
+        .eq("slug", festivalSlug)
+        .maybeSingle();
+
+      data = fallback.data ? ({ ...fallback.data, cover_media: null } as RawPublicFestivalRow) : null;
+      error = fallback.error;
+    }
 
     if (error) {
       return { data: null, error: error.message };
     }
 
-    return { data, error: null };
+    return { data: data ? mapFestival(data) : null, error: null };
   } catch (error) {
     return {
       data: null,
@@ -365,18 +428,35 @@ async function getEditionBySlug(
 ): Promise<QueryState<PublicEditionRow>> {
   try {
     const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase
+    const primary = await supabase
       .from("editions")
-      .select("id,name,slug,year,starts_on,ends_on,timezone")
+      .select(
+        "id,name,slug,year,starts_on,ends_on,timezone,cover_media:media_assets!editions_cover_media_id_fkey(id,bucket_name,storage_path,file_name,mime_type,size_bytes,width,height,alt_text)",
+      )
       .eq("festival_id", festivalId)
       .eq("slug", editionSlug)
       .maybeSingle();
+
+    let error = primary.error;
+    let data: RawPublicEditionRow | null = primary.data as RawPublicEditionRow | null;
+
+    if (isMissingMediaSchemaError(primary.error)) {
+      const fallback = await supabase
+        .from("editions")
+        .select("id,name,slug,year,starts_on,ends_on,timezone")
+        .eq("festival_id", festivalId)
+        .eq("slug", editionSlug)
+        .maybeSingle();
+
+      data = fallback.data ? ({ ...fallback.data, cover_media: null } as RawPublicEditionRow) : null;
+      error = fallback.error;
+    }
 
     if (error) {
       return { data: null, error: error.message };
     }
 
-    return { data, error: null };
+    return { data: data ? mapEdition(data) : null, error: null };
   } catch (error) {
     return {
       data: null,
@@ -425,13 +505,36 @@ export async function getPublicHomeEditionItems(): Promise<QueryState<PublicHome
   try {
     const supabase = await createSupabaseServerClient();
     const todayKey = formatDateKeyForTimeZone(new Date(), "Europe/Madrid");
-    const { data, error } = await supabase
+    const primary = await supabase
       .from("editions")
       .select(
-        "id,name,slug,year,starts_on,ends_on,timezone,festival:festivals!inner(name,slug,city)",
+        "id,name,slug,year,starts_on,ends_on,timezone,festival:festivals!inner(name,slug,city,cover_media:media_assets!festivals_cover_media_id_fkey(id,bucket_name,storage_path,file_name,mime_type,size_bytes,width,height,alt_text))",
       )
       .gte("ends_on", todayKey)
       .order("starts_on", { ascending: true });
+
+    let error = primary.error;
+    let data = primary.data;
+
+    if (isMissingMediaSchemaError(primary.error)) {
+      const fallback = await supabase
+        .from("editions")
+        .select(
+          "id,name,slug,year,starts_on,ends_on,timezone,festival:festivals!inner(name,slug,city)",
+        )
+        .gte("ends_on", todayKey)
+        .order("starts_on", { ascending: true });
+
+      data = (fallback.data ?? []).map((row) => {
+        const festivalRelation = Array.isArray(row.festival) ? row.festival[0] : row.festival;
+
+        return {
+          ...row,
+          festival: festivalRelation ? { ...festivalRelation, cover_media: null } : null,
+        };
+      }) as unknown as typeof primary.data;
+      error = fallback.error;
+    }
 
     if (error) {
       return { data: null, error: error.message };
@@ -462,6 +565,7 @@ export async function getPublicHomeEditionItems(): Promise<QueryState<PublicHome
           festivalName: festivalRelation.name,
           festivalSlug: festivalRelation.slug,
           festivalCity: festivalRelation.city ?? null,
+          festivalCoverMedia: resolveMediaAsset(festivalRelation.cover_media),
         };
       })
       .filter((edition): edition is NonNullable<typeof edition> => edition !== null);
@@ -501,6 +605,7 @@ export async function getPublicHomeEditionItems(): Promise<QueryState<PublicHome
         ),
         temporalLabel: edition.temporalLabel,
         publishedEventsCount: eventCounts.get(edition.id) ?? 0,
+        festivalCoverMedia: edition.festivalCoverMedia,
       })),
       error: null,
     };
@@ -541,11 +646,27 @@ export async function getPublicEditionPageData(
 
   try {
     const supabase = await createSupabaseServerClient();
-    const { data: eventRows, error } = await supabase
+    const primary = await supabase
       .from("events")
-      .select("id,title,slug,starts_at,status,change_note,location_pending,location:locations(name)")
+      .select(
+        "id,title,slug,starts_at,status,change_note,location_pending,location:locations(name),cover_media:media_assets!events_cover_media_id_fkey(id,bucket_name,storage_path,file_name,mime_type,size_bytes,width,height,alt_text)",
+      )
       .eq("edition_id", edition.id)
       .order("starts_at", { ascending: true });
+
+    let error = primary.error;
+    let eventRows = primary.data;
+
+    if (isMissingMediaSchemaError(primary.error)) {
+      const fallback = await supabase
+        .from("events")
+        .select("id,title,slug,starts_at,status,change_note,location_pending,location:locations(name)")
+        .eq("edition_id", edition.id)
+        .order("starts_at", { ascending: true });
+
+      eventRows = (fallback.data ?? []).map((row) => ({ ...row, cover_media: null })) as unknown as typeof primary.data;
+      error = fallback.error;
+    }
 
     if (error) {
       return { data: null, error: error.message };
@@ -571,6 +692,8 @@ export async function getPublicEditionPageData(
           edition.ends_on,
           edition.timezone,
         ),
+        temporalLabel: getEditionTemporalLabel(edition.starts_on, edition.ends_on, edition.timezone),
+        coverMedia: edition.coverMedia,
         todayEvents,
         upcomingEvents,
         allEvents,
@@ -613,14 +736,31 @@ export async function getPublicEventDetailData(
 
   try {
     const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase
+    const primary = await supabase
       .from("events")
       .select(
-        "title,slug,short_description,starts_at,status,location_pending,change_note,location:locations(name,address,google_maps_url)",
+        "title,slug,short_description,starts_at,status,location_pending,change_note,location:locations(name,address,google_maps_url),cover_media:media_assets!events_cover_media_id_fkey(id,bucket_name,storage_path,file_name,mime_type,size_bytes,width,height,alt_text)",
       )
       .eq("edition_id", editionState.data.id)
       .eq("slug", eventSlug)
       .maybeSingle();
+
+    let error = primary.error;
+    let data: PublicEventDetailRow | null = primary.data as PublicEventDetailRow | null;
+
+    if (isMissingMediaSchemaError(primary.error)) {
+      const fallback = await supabase
+        .from("events")
+        .select(
+          "title,slug,short_description,starts_at,status,location_pending,change_note,location:locations(name,address,google_maps_url)",
+        )
+        .eq("edition_id", editionState.data.id)
+        .eq("slug", eventSlug)
+        .maybeSingle();
+
+      data = fallback.data ? ({ ...fallback.data, cover_media: null } as PublicEventDetailRow) : null;
+      error = fallback.error;
+    }
 
     if (error) {
       return { data: null, error: error.message };

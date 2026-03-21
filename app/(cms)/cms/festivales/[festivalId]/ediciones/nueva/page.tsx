@@ -5,9 +5,11 @@ import { CmsBreadcrumbs } from "@/components/cms/cms-breadcrumbs";
 import { CmsPageHeader } from "@/components/cms/cms-page-header";
 import { Callout } from "@/components/shared/callout";
 import { CheckboxField, FormField } from "@/components/shared/form-field";
+import { FormSubmitButton } from "@/components/shared/form-submit-button";
 import { InfoTile } from "@/components/shared/info-tile";
+import { MediaImageField } from "@/components/shared/media-image-field";
 import { SectionCard } from "@/components/shared/section-card";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -82,7 +84,7 @@ export default async function CmsCreateEditionPage({
         >
           {genericError ? <Callout variant="error">{genericError}</Callout> : null}
 
-          <form action={createEditionAction} className="space-y-5">
+          <form action={createEditionAction} className="space-y-5" encType="multipart/form-data">
             <input type="hidden" name="festival_id" value={festival.id} />
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -131,10 +133,13 @@ export default async function CmsCreateEditionPage({
               />
             </div>
 
+            <MediaImageField
+              previewTitle="Portada de la edicion"
+              emptyLabel="Todavia no hay una portada cargada para esta edicion."
+            />
+
             <div className="flex justify-end">
-              <Button type="submit" size="lg">
-                Crear edicion
-              </Button>
+              <FormSubmitButton size="lg" idleLabel="Crear edicion" pendingLabel="Creando edicion..." />
             </div>
           </form>
         </SectionCard>

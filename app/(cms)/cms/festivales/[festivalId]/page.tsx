@@ -6,10 +6,12 @@ import { CmsPageHeader } from "@/components/cms/cms-page-header";
 import { CmsSidePanel } from "@/components/cms/cms-side-panel";
 import { Callout } from "@/components/shared/callout";
 import { FormField } from "@/components/shared/form-field";
+import { FormSubmitButton } from "@/components/shared/form-submit-button";
 import { InfoTile } from "@/components/shared/info-tile";
+import { MediaImageField } from "@/components/shared/media-image-field";
 import { SectionCard } from "@/components/shared/section-card";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -205,7 +207,7 @@ export default async function CmsFestivalDetailPage({
         >
           {messages?.error ? <Callout variant="error">{messages.error}</Callout> : null}
 
-          <form action={updateFestivalAction} className="mt-5 space-y-4">
+          <form action={updateFestivalAction} className="mt-5 space-y-4" encType="multipart/form-data">
             <input type="hidden" name="festival_id" value={festival.id} />
 
             <FormField label="Nombre">
@@ -238,10 +240,14 @@ export default async function CmsFestivalDetailPage({
               <Textarea name="short_description" rows={3} defaultValue={festival.short_description ?? ""} />
             </FormField>
 
+            <MediaImageField
+              currentImage={festival.coverMedia}
+              previewTitle={festival.name}
+              emptyLabel="Este festival todavia no tiene portada."
+            />
+
             <div className="flex justify-end">
-              <Button type="submit" size="lg">
-                Guardar festival
-              </Button>
+              <FormSubmitButton size="lg" idleLabel="Guardar festival" pendingLabel="Guardando festival..." />
             </div>
           </form>
         </CmsSidePanel>

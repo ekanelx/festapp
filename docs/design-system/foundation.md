@@ -126,6 +126,7 @@ En [components/ui](/C:/dev/festapp/components/ui):
 
 - `Button`
   - Variantes: `default`, `outline`, `ghost`, `link`, `danger`
+  - Variantes publicas adicionales: `accent`
   - Sizes: `sm`, `default`, `lg`
   - Debe resolver contraste, foco, disabled y jerarquia de CTA sin clases locales extra.
 - `Input`, `Textarea`, `Select`
@@ -137,6 +138,11 @@ En [components/ui](/C:/dev/festapp/components/ui):
 - `Card`
   - Es surface estructural base.
   - No debe contener semantica de dominio.
+  - Variantes base actuales:
+    - `default`
+    - `editorial`
+    - `soft`
+    - `strong`
 - `Badge`
   - Resuelve estados cortos y etiquetas compactas.
 - `Drawer`
@@ -159,6 +165,19 @@ En [components/shared](/C:/dev/festapp/components/shared):
   - Shell de campo con label e hint.
 - `CheckboxField`
   - Shell consistente para toggles booleanos.
+
+En [components/public](/C:/dev/festapp/components/public):
+
+- `PublicHeroBlock`
+  - Hero editorial reusable para pantallas publicas clave.
+- `PublicMediaPlaceholder`
+  - Media visual reusable cuando el producto real aun no tiene imagen publicada.
+- `PublicMetaRow`
+  - Metadata compacta y silenciosa en pills.
+- `PublicInfoPanel`
+  - Paneles de contexto o dato practico.
+- `PublicStoryCard`
+  - Card editorial navegable para home, cambios o destacados.
 
 ## Como decidir donde toca un cambio
 
@@ -192,6 +211,8 @@ En [components/shared](/C:/dev/festapp/components/shared):
 
 - `Button.default`
   - CTA principal de la accion actual.
+- `Button.accent`
+  - CTA principal de la app publica cuando hace falta un tono editorial terracota.
 - `Button.outline`
   - CTA secundario o navegacion contextual.
 - `Button.ghost`

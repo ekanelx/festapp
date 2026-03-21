@@ -7,10 +7,12 @@ import { CmsPageHeader } from "@/components/cms/cms-page-header";
 import { CmsSidePanel } from "@/components/cms/cms-side-panel";
 import { Callout } from "@/components/shared/callout";
 import { CheckboxField, FormField } from "@/components/shared/form-field";
+import { FormSubmitButton } from "@/components/shared/form-submit-button";
 import { InfoTile } from "@/components/shared/info-tile";
+import { MediaImageField } from "@/components/shared/media-image-field";
 import { SectionCard } from "@/components/shared/section-card";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -220,7 +222,7 @@ export default async function CmsEditionDetailPage({
         >
           {messages?.error && !isDateError ? <Callout variant="error">{messages.error}</Callout> : null}
 
-          <form action={updateEditionAction} className="mt-5 space-y-4">
+          <form action={updateEditionAction} className="mt-5 space-y-4" encType="multipart/form-data">
             <input type="hidden" name="edition_id" value={edition.id} />
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -267,10 +269,14 @@ export default async function CmsEditionDetailPage({
               checkbox={<Checkbox name="is_current" defaultChecked={edition.is_current} />}
             />
 
+            <MediaImageField
+              currentImage={edition.coverMedia}
+              previewTitle={edition.name}
+              emptyLabel="Esta edicion todavia no tiene portada."
+            />
+
             <div className="flex justify-end">
-              <Button type="submit" size="lg">
-                Guardar edicion
-              </Button>
+              <FormSubmitButton size="lg" idleLabel="Guardar edicion" pendingLabel="Guardando edicion..." />
             </div>
           </form>
         </CmsSidePanel>

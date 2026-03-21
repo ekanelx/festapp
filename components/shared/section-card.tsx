@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { cn } from "@/lib/utils";
 
 type SectionCardProps = {
+  variant?: "default" | "editorial" | "soft" | "strong";
   title?: string;
   eyebrow?: string;
   description?: string;
@@ -17,6 +18,7 @@ type SectionCardProps = {
 };
 
 export function SectionCard({
+  variant = "default",
   title,
   eyebrow,
   description,
@@ -31,7 +33,7 @@ export function SectionCard({
   const hasHeader = eyebrow || title || description || actions;
 
   return (
-    <Card className={className}>
+    <Card variant={variant} className={className}>
       {hasHeader ? (
         <CardHeader
           className={cn(

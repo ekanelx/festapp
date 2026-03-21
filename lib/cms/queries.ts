@@ -1,5 +1,11 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { EventStatus, ReviewStatus } from "@/lib/domain/types";
+import {
+  isMissingMediaSchemaError,
+  resolveMediaAsset,
+  type MediaAsset,
+  type RawMediaAssetRelation,
+} from "@/lib/media/utils";
 
 type FestivalSummary = {
   id: string;
@@ -9,6 +15,7 @@ type FestivalSummary = {
   city: string | null;
   default_timezone: string;
   status: string;
+  cover_media: RawMediaAssetRelation;
 };
 
 type FestivalRelation = {
@@ -38,7 +45,9 @@ type EventMetricRow = {
   review_status: ReviewStatus;
 };
 
-export type CmsFestivalSummary = FestivalSummary;
+export type CmsFestivalSummary = Omit<FestivalSummary, "cover_media"> & {
+  coverMedia: MediaAsset | null;
+};
 
 export type CmsEditionSummary = {
   id: string;
@@ -53,10 +62,12 @@ export type CmsEditionSummary = {
   is_current: boolean;
   festival: FestivalRelation | null;
   metrics: EditionMetrics;
+  coverMedia: MediaAsset | null;
 };
 
-type RawEditionSummary = Omit<CmsEditionSummary, "festival" | "metrics"> & {
+type RawEditionSummary = Omit<CmsEditionSummary, "festival" | "metrics" | "coverMedia"> & {
   festival: RawFestivalRelation;
+  cover_media: RawMediaAssetRelation;
 };
 
 export type CmsFestivalTreeItem = CmsFestivalSummary & {
@@ -151,9 +162,10 @@ export type CmsEventEditorEvent = {
       slug: string;
     } | null;
   } | null;
+  coverMedia: MediaAsset | null;
 };
 
-type RawCmsEventEditorEvent = Omit<CmsEventEditorEvent, "location" | "edition"> & {
+type RawCmsEventEditorEvent = Omit<CmsEventEditorEvent, "location" | "edition" | "coverMedia"> & {
   location:
     | { id: string; name: string; address: string | null }
     | { id: string; name: string; address: string | null }[]
@@ -178,6 +190,7 @@ type RawCmsEventEditorEvent = Omit<CmsEventEditorEvent, "location" | "edition"> 
         festival: { name: string; slug: string } | { name: string; slug: string }[] | null;
       }[]
     | null;
+  cover_media: RawMediaAssetRelation;
 };
 
 export type CmsEventEditorData = {
@@ -221,14 +234,22 @@ function emptyEditionMetrics(): EditionMetrics {
 }
 
 function mapFestival(row: FestivalSummary) {
-  return row;
+  const { cover_media, ...festival } = row;
+
+  return {
+    ...festival,
+    coverMedia: resolveMediaAsset(cover_media),
+  };
 }
 
 function mapEdition(row: RawEditionSummary): CmsEditionSummary {
+  const { cover_media, ...edition } = row;
+
   return {
-    ...row,
-    festival: unwrapRelation(row.festival),
+    ...edition,
+    festival: unwrapRelation(edition.festival),
     metrics: emptyEditionMetrics(),
+    coverMedia: resolveMediaAsset(cover_media),
   };
 }
 
@@ -248,17 +269,19 @@ function mapEvent(row: RawEventListItem): CmsEventListItem {
 }
 
 function mapEditorEvent(row: RawCmsEventEditorEvent): CmsEventEditorEvent {
-  const edition = unwrapRelation(row.edition);
+  const { cover_media, ...event } = row;
+  const edition = unwrapRelation(event.edition);
 
   return {
-    ...row,
-    location: unwrapRelation(row.location),
+    ...event,
+    location: unwrapRelation(event.location),
     edition: edition
       ? {
           ...edition,
           festival: unwrapRelation(edition.festival),
         }
       : null,
+    coverMedia: resolveMediaAsset(cover_media),
   };
 }
 
@@ -336,7 +359,7 @@ async function getEditionsBase(params?: { festivalId?: string; editionId?: strin
   let query = supabase
     .from("editions")
     .select(
-      "id,festival_id,name,slug,year,starts_on,ends_on,timezone,status,is_current,festival:festivals(id,name,slug,city)",
+      "id,festival_id,name,slug,year,starts_on,ends_on,timezone,status,is_current,festival:festivals(id,name,slug,city),cover_media:media_assets!editions_cover_media_id_fkey(id,bucket_name,storage_path,file_name,mime_type,size_bytes,width,height,alt_text)",
     )
     .order("is_current", { ascending: false })
     .order("starts_on", { ascending: false })
@@ -350,7 +373,34 @@ async function getEditionsBase(params?: { festivalId?: string; editionId?: strin
     query = query.eq("id", params.editionId);
   }
 
-  const editions = await safeQuery<RawEditionSummary, CmsEditionSummary>(query, mapEdition);
+  const primaryEditions = await safeQuery<RawEditionSummary, CmsEditionSummary>(query, mapEdition);
+  let editions = primaryEditions;
+
+  if (isMissingMediaSchemaError(primaryEditions.error ? { message: primaryEditions.error } : null)) {
+    let fallbackQuery = supabase
+      .from("editions")
+      .select("id,festival_id,name,slug,year,starts_on,ends_on,timezone,status,is_current,festival:festivals(id,name,slug,city)")
+      .order("is_current", { ascending: false })
+      .order("starts_on", { ascending: false })
+      .order("name", { ascending: true });
+
+    if (params?.festivalId) {
+      fallbackQuery = fallbackQuery.eq("festival_id", params.festivalId);
+    }
+
+    if (params?.editionId) {
+      fallbackQuery = fallbackQuery.eq("id", params.editionId);
+    }
+
+    const fallback = await fallbackQuery;
+    editions = {
+      data: (fallback.data ?? []).map((row) =>
+        mapEdition({ ...(row as Omit<RawEditionSummary, "cover_media">), cover_media: null }),
+      ),
+      error: fallback.error?.message ?? null,
+    };
+  }
+
   const metrics = await getEditionMetricsMap(
     supabase,
     editions.data.map((edition) => edition.id),
@@ -387,13 +437,31 @@ export async function getCmsDashboardData() {
 
 export async function getCmsFestivalTree(): Promise<QueryState<CmsFestivalTreeItem[]>> {
   const supabase = await createSupabaseServerClient();
-  const festivals = await safeQuery<FestivalSummary, CmsFestivalSummary>(
+  const primaryFestivals = await safeQuery<FestivalSummary, CmsFestivalSummary>(
     supabase
       .from("festivals")
-      .select("id,name,slug,short_description,city,default_timezone,status")
+      .select(
+        "id,name,slug,short_description,city,default_timezone,status,cover_media:media_assets!festivals_cover_media_id_fkey(id,bucket_name,storage_path,file_name,mime_type,size_bytes,width,height,alt_text)",
+      )
       .order("name", { ascending: true }),
     mapFestival,
   );
+  let festivals = primaryFestivals;
+
+  if (isMissingMediaSchemaError(primaryFestivals.error ? { message: primaryFestivals.error } : null)) {
+    const fallback = await supabase
+      .from("festivals")
+      .select("id,name,slug,short_description,city,default_timezone,status")
+      .order("name", { ascending: true });
+
+    festivals = {
+      data: (fallback.data ?? []).map((row) =>
+        mapFestival({ ...(row as Omit<FestivalSummary, "cover_media">), cover_media: null }),
+      ),
+      error: fallback.error?.message ?? null,
+    };
+  }
+
   const editions = await getEditionsBase();
 
   const tree = festivals.data.map((festival) => {
@@ -478,13 +546,31 @@ export async function getCmsCatalogOverview() {
 
 export async function getCmsEventEditorData(eventId: string): Promise<CmsEventEditorData> {
   const supabase = await createSupabaseServerClient();
-  const { data: rawEvent, error: eventError } = await supabase
+  const primary = await supabase
     .from("events")
     .select(
-      "id,title,slug,starts_at,status,review_status,short_description,change_note,location_pending,location_id,published_at,location:locations(id,name,address),edition:editions(id,name,slug,year,timezone,festival_id,festival:festivals(name,slug))",
+      "id,title,slug,starts_at,status,review_status,short_description,change_note,location_pending,location_id,published_at,location:locations(id,name,address),edition:editions(id,name,slug,year,timezone,festival_id,festival:festivals(name,slug)),cover_media:media_assets!events_cover_media_id_fkey(id,bucket_name,storage_path,file_name,mime_type,size_bytes,width,height,alt_text)",
     )
     .eq("id", eventId)
     .maybeSingle();
+
+  let rawEvent = primary.data as RawCmsEventEditorEvent | null;
+  let eventError = primary.error;
+
+  if (isMissingMediaSchemaError(primary.error)) {
+    const fallback = await supabase
+      .from("events")
+      .select(
+        "id,title,slug,starts_at,status,review_status,short_description,change_note,location_pending,location_id,published_at,location:locations(id,name,address),edition:editions(id,name,slug,year,timezone,festival_id,festival:festivals(name,slug))",
+      )
+      .eq("id", eventId)
+      .maybeSingle();
+
+    rawEvent = fallback.data
+      ? ({ ...(fallback.data as Omit<RawCmsEventEditorEvent, "cover_media">), cover_media: null } as RawCmsEventEditorEvent)
+      : null;
+    eventError = fallback.error;
+  }
 
   if (eventError) {
     return {

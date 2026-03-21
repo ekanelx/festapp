@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireCmsRole } from "@/lib/cms/auth";
+import { deleteMediaAsset, saveEntityCoverMedia } from "@/lib/media/server";
+import { isMissingMediaSchemaError, resolveMediaAsset } from "@/lib/media/utils";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const EDITION_STATUS_VALUES = new Set(["draft", "published", "archived"]);
@@ -62,11 +64,29 @@ export async function updateEditionAction(formData: FormData) {
   }
 
   const supabase = await createSupabaseServerClient();
-  const { data: currentEdition, error: currentEditionError } = await supabase
+  const primaryEdition = await supabase
     .from("editions")
-    .select("id,festival_id,slug,is_current,festival:festivals!inner(slug)")
+    .select(
+      "id,festival_id,slug,is_current,festival:festivals!inner(slug),cover_media:media_assets!editions_cover_media_id_fkey(id,bucket_name,storage_path,file_name,mime_type,size_bytes,width,height,alt_text)",
+    )
     .eq("id", editionId)
     .maybeSingle();
+
+  let currentEdition = primaryEdition.data;
+  let currentEditionError = primaryEdition.error;
+
+  if (isMissingMediaSchemaError(primaryEdition.error)) {
+    const fallbackEdition = await supabase
+      .from("editions")
+      .select("id,festival_id,slug,is_current,festival:festivals!inner(slug)")
+      .eq("id", editionId)
+      .maybeSingle();
+
+    currentEdition = fallbackEdition.data
+      ? ({ ...fallbackEdition.data, cover_media: null } as unknown as typeof primaryEdition.data)
+      : fallbackEdition.data;
+    currentEditionError = fallbackEdition.error;
+  }
 
   if (currentEditionError || !currentEdition) {
     redirect(buildEditionUrl(editionId, { error: "No se pudo cargar la edicion para guardarla." }));
@@ -126,6 +146,21 @@ export async function updateEditionAction(formData: FormData) {
     redirect(buildEditionUrl(editionId, { error: "El estado de la edicion no es valido.", edit: "edition" }));
   }
 
+  const mediaChange = await saveEntityCoverMedia({
+    ownerType: "edition",
+    ownerId: editionId,
+    currentAsset: resolveMediaAsset(currentEdition.cover_media),
+    fileEntry: formData.get("cover_image"),
+    altTextEntry: formData.get("cover_image_alt_text"),
+    widthEntry: formData.get("cover_image_width"),
+    heightEntry: formData.get("cover_image_height"),
+    removeEntry: formData.get("remove_cover_image"),
+  });
+
+  if (mediaChange.error) {
+    redirect(buildEditionUrl(editionId, { error: mediaChange.error, edit: "edition" }));
+  }
+
   if (isCurrent) {
     const { data: previousCurrentEdition } = await supabase
       .from("editions")
@@ -153,10 +188,15 @@ export async function updateEditionAction(formData: FormData) {
       timezone,
       status,
       is_current: isCurrent,
+      ...(mediaChange.coverMediaId !== undefined ? { cover_media_id: mediaChange.coverMediaId } : {}),
     })
     .eq("id", editionId);
 
   if (updateError) {
+    if (mediaChange.cleanupOnFailureMediaId) {
+      await deleteMediaAsset(mediaChange.cleanupOnFailureMediaId);
+    }
+
     if (isCurrent && previousCurrentEditionId && previousCurrentEditionId !== editionId) {
       await supabase.from("editions").update({ is_current: true }).eq("id", previousCurrentEditionId);
     }
@@ -175,6 +215,10 @@ export async function updateEditionAction(formData: FormData) {
         ...(updateError.code === "23514" ? { field: "dates" } : {}),
       }),
     );
+  }
+
+  if (mediaChange.cleanupOnSuccessMediaId) {
+    await deleteMediaAsset(mediaChange.cleanupOnSuccessMediaId);
   }
 
   revalidatePath("/cms");

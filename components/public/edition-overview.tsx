@@ -3,7 +3,9 @@ import Link from "next/link";
 import type { PublicEventSummary } from "@/lib/public/queries";
 import { cn } from "@/lib/utils";
 
+import { PublicMetaRow } from "@/components/public/public-editorial";
 import { SectionCard } from "@/components/shared/section-card";
+import { Badge } from "@/components/ui/badge";
 
 type EditionOverviewProps = {
   title: string;
@@ -15,6 +17,38 @@ type EditionOverviewProps = {
   editionSlug?: string;
 };
 
+function getEventStyles(event: PublicEventSummary) {
+  if (event.status === "cancelled") {
+    return {
+      card: "bg-[var(--danger-surface)]",
+      badge: "danger" as const,
+      note: "text-[var(--danger)]",
+    };
+  }
+
+  if (event.status === "updated") {
+    return {
+      card: "bg-[var(--warning-surface)]",
+      badge: "warning" as const,
+      note: "text-[var(--warning)]",
+    };
+  }
+
+  if (event.status === "finished") {
+    return {
+      card: "bg-[var(--surface-soft)]",
+      badge: "soft" as const,
+      note: "text-[var(--muted)]",
+    };
+  }
+
+  return {
+    card: "bg-[var(--surface-soft)]",
+    badge: "accent" as const,
+    note: "text-[var(--muted)]",
+  };
+}
+
 export function EditionOverview({
   title,
   description,
@@ -24,137 +58,69 @@ export function EditionOverview({
   festivalSlug,
   editionSlug,
 }: EditionOverviewProps) {
-  function getEventClasses(event: PublicEventSummary) {
-    if (event.status === "cancelled") {
-      return {
-        article: "border-[#9b2c16]/20 bg-[#fff3ef]",
-        badge: "bg-[#9b2c16] text-white",
-        note: "text-[#8c2b15]",
-      };
-    }
-
-    if (event.status === "updated") {
-      return {
-        article: "border-amber-200 bg-amber-50",
-        badge: "bg-amber-600 text-white",
-        note: "text-amber-800",
-      };
-    }
-
-    if (event.status === "finished") {
-      return {
-        article: "border-stone-200 bg-stone-100",
-        badge: "bg-stone-700 text-white",
-        note: "text-stone-600",
-      };
-    }
-
-    return {
-      article: "border-black/8 bg-[#fff9f3]",
-      badge: "bg-[#9b2c16] text-white",
-      note: "text-stone-500",
-    };
-  }
-
   return (
-    <SectionCard title={title} description={description}>
+    <SectionCard variant="editorial" title={title} description={description} contentClassName="space-y-3">
       {events.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-black/12 bg-stone-50 px-4 py-5 text-sm text-stone-600">
+        <div className="rounded-[calc(var(--radius-xl)-0.15rem)] bg-[var(--surface-soft)] px-4 py-5 text-sm text-[var(--muted)]">
           {emptyMessage}
         </div>
       ) : (
-        <div className="space-y-3">
-          {events.map((event) => {
-            const styles = getEventClasses(event);
+        events.map((event) => {
+          const styles = getEventStyles(event);
+          const href =
+            festivalSlug && editionSlug
+              ? `/${festivalSlug}/${editionSlug}/actos/${event.slug}`
+              : null;
 
-            return (
-            <article
-              key={event.id}
-              className={cn(
-                "rounded-3xl border p-4 transition hover:border-black/15 hover:bg-white",
-                styles.article,
-              )}
-            >
-              {festivalSlug && editionSlug ? (
-                <Link
-                  href={`/${festivalSlug}/${editionSlug}/actos/${event.slug}`}
-                  className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9b2c16] focus-visible:ring-offset-2 focus-visible:ring-offset-white"
-                >
-                  <div className="grid grid-cols-[72px_1fr] gap-4">
-                    <div className="rounded-2xl bg-white px-2 py-3 text-center">
-                      <p className="text-2xl font-semibold leading-none text-stone-950">
-                        {event.startsAtTimeLabel}
-                      </p>
-                      {showDayLabel ? (
-                        <p className="mt-2 text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
-                          {event.startsAtDayLabel}
-                        </p>
-                      ) : null}
-                    </div>
+          const content = (
+            <div className={cn("grid gap-4 rounded-[calc(var(--radius-xl)-0.15rem)] p-4 sm:grid-cols-[5.25rem_1fr]", styles.card)}>
+              <div className="rounded-[calc(var(--radius-lg)-0.15rem)] bg-[var(--surface-raised)] px-3 py-4 text-center shadow-[var(--shadow-control)]">
+                <p className="text-2xl font-semibold leading-none text-[var(--foreground)]">
+                  {event.startsAtTimeLabel}
+                </p>
+                {showDayLabel ? (
+                  <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
+                    {event.startsAtDayLabel}
+                  </p>
+                ) : null}
+              </div>
 
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1">
-                        <p className="font-semibold text-stone-900">{event.title}</p>
-                        {event.locationLabel ? (
-                          <p className="text-sm text-stone-500">{event.locationLabel}</p>
-                        ) : (
-                          <p className="text-sm text-stone-400">Sin ubicacion publicada</p>
-                        )}
-                        {event.changeNote ? (
-                          <p className={cn("pt-1 text-sm leading-5", styles.note)}>
-                            {event.changeNote}
-                          </p>
-                        ) : null}
-                      </div>
-
-                      {event.statusLabel ? (
-                        <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", styles.badge)}>
-                          {event.statusLabel}
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-                </Link>
-              ) : (
-                <div className="grid grid-cols-[72px_1fr] gap-4">
-                  <div className="rounded-2xl bg-white px-2 py-3 text-center">
-                    <p className="text-2xl font-semibold leading-none text-stone-950">
-                      {event.startsAtTimeLabel}
+              <div className="flex min-w-0 flex-col gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="font-serif text-2xl leading-[1.05] tracking-[-0.02em] text-[var(--foreground)]">
+                      {event.title}
                     </p>
-                    {showDayLabel ? (
-                      <p className="mt-2 text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
-                        {event.startsAtDayLabel}
-                      </p>
-                    ) : null}
+                    <PublicMetaRow
+                      items={[event.locationLabel, showDayLabel ? null : event.startsAtDayLabel]}
+                      className="mt-3"
+                    />
                   </div>
 
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <p className="font-semibold text-stone-900">{event.title}</p>
-                      {event.locationLabel ? (
-                        <p className="text-sm text-stone-500">{event.locationLabel}</p>
-                      ) : (
-                        <p className="text-sm text-stone-400">Sin ubicacion publicada</p>
-                      )}
-                      {event.changeNote ? (
-                        <p className={cn("pt-1 text-sm leading-5", styles.note)}>
-                          {event.changeNote}
-                        </p>
-                      ) : null}
-                    </div>
-
-                    {event.statusLabel ? (
-                      <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", styles.badge)}>
-                        {event.statusLabel}
-                      </span>
-                    ) : null}
-                  </div>
+                  {event.statusLabel ? <Badge variant={styles.badge}>{event.statusLabel}</Badge> : null}
                 </div>
-              )}
-            </article>
-            );
-          })}
-        </div>
+
+                {event.changeNote ? (
+                  <p className={cn("text-sm leading-6", styles.note)}>{event.changeNote}</p>
+                ) : null}
+              </div>
+            </div>
+          );
+
+          if (!href) {
+            return <article key={event.id}>{content}</article>;
+          }
+
+          return (
+            <Link
+              key={event.id}
+              href={href}
+              className="block transition hover:-translate-y-px"
+            >
+              {content}
+            </Link>
+          );
+        })
       )}
     </SectionCard>
   );

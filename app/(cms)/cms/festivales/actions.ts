@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireCmsRole } from "@/lib/cms/auth";
+import { deleteMediaAsset, saveEntityCoverMedia } from "@/lib/media/server";
+import { isMissingMediaSchemaError, resolveMediaAsset } from "@/lib/media/utils";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const FESTIVAL_STATUS_VALUES = new Set(["draft", "published", "archived"]);
@@ -97,11 +99,29 @@ export async function updateFestivalAction(formData: FormData) {
   }
 
   const supabase = await createSupabaseServerClient();
-  const { data: currentFestival, error: currentFestivalError } = await supabase
+  const primaryFestival = await supabase
     .from("festivals")
-    .select("id,slug")
+    .select(
+      "id,slug,cover_media:media_assets!festivals_cover_media_id_fkey(id,bucket_name,storage_path,file_name,mime_type,size_bytes,width,height,alt_text)",
+    )
     .eq("id", festivalId)
     .maybeSingle();
+
+  let currentFestival = primaryFestival.data;
+  let currentFestivalError = primaryFestival.error;
+
+  if (isMissingMediaSchemaError(primaryFestival.error)) {
+    const fallbackFestival = await supabase
+      .from("festivals")
+      .select("id,slug")
+      .eq("id", festivalId)
+      .maybeSingle();
+
+    currentFestival = fallbackFestival.data
+      ? ({ ...fallbackFestival.data, cover_media: null } as unknown as typeof primaryFestival.data)
+      : fallbackFestival.data;
+    currentFestivalError = fallbackFestival.error;
+  }
 
   if (currentFestivalError || !currentFestival) {
     redirect(buildFestivalUrl(festivalId, { error: "No se pudo cargar el festival para guardarlo." }));
@@ -130,6 +150,21 @@ export async function updateFestivalAction(formData: FormData) {
     redirect(buildFestivalUrl(festivalId, { error: "El estado indicado no es valido.", edit: "festival" }));
   }
 
+  const mediaChange = await saveEntityCoverMedia({
+    ownerType: "festival",
+    ownerId: festivalId,
+    currentAsset: resolveMediaAsset(currentFestival.cover_media),
+    fileEntry: formData.get("cover_image"),
+    altTextEntry: formData.get("cover_image_alt_text"),
+    widthEntry: formData.get("cover_image_width"),
+    heightEntry: formData.get("cover_image_height"),
+    removeEntry: formData.get("remove_cover_image"),
+  });
+
+  if (mediaChange.error) {
+    redirect(buildFestivalUrl(festivalId, { error: mediaChange.error, edit: "festival" }));
+  }
+
   const { error: updateError } = await supabase
     .from("festivals")
     .update({
@@ -138,11 +173,20 @@ export async function updateFestivalAction(formData: FormData) {
       default_timezone: defaultTimezone,
       short_description: shortDescription,
       status,
+      ...(mediaChange.coverMediaId !== undefined ? { cover_media_id: mediaChange.coverMediaId } : {}),
     })
     .eq("id", festivalId);
 
   if (updateError) {
+    if (mediaChange.cleanupOnFailureMediaId) {
+      await deleteMediaAsset(mediaChange.cleanupOnFailureMediaId);
+    }
+
     redirect(buildFestivalUrl(festivalId, { error: updateError.message, edit: "festival" }));
+  }
+
+  if (mediaChange.cleanupOnSuccessMediaId) {
+    await deleteMediaAsset(mediaChange.cleanupOnSuccessMediaId);
   }
 
   const { data: editions } = await supabase
@@ -210,6 +254,48 @@ export async function createFestivalAction(formData: FormData) {
     redirect(`/cms/festivales/nuevo?error=${encodeURIComponent(message)}`);
   }
 
+  const mediaChange = await saveEntityCoverMedia({
+    ownerType: "festival",
+    ownerId: createdFestival.id,
+    currentAsset: null,
+    fileEntry: formData.get("cover_image"),
+    altTextEntry: formData.get("cover_image_alt_text"),
+    widthEntry: formData.get("cover_image_width"),
+    heightEntry: formData.get("cover_image_height"),
+    removeEntry: formData.get("remove_cover_image"),
+  });
+
+  if (mediaChange.error) {
+    await revalidateFestivalPaths({
+      festivalId: createdFestival.id,
+      festivalSlug: createdFestival.slug,
+      editions: [],
+    });
+
+    redirect(buildFestivalUrl(createdFestival.id, { created: "1", error: mediaChange.error, edit: "festival" }));
+  }
+
+  if (mediaChange.coverMediaId !== undefined) {
+    const { error: coverUpdateError } = await supabase
+      .from("festivals")
+      .update({ cover_media_id: mediaChange.coverMediaId })
+      .eq("id", createdFestival.id);
+
+    if (coverUpdateError) {
+      if (mediaChange.cleanupOnFailureMediaId) {
+        await deleteMediaAsset(mediaChange.cleanupOnFailureMediaId);
+      }
+
+      redirect(
+        buildFestivalUrl(createdFestival.id, {
+          created: "1",
+          error: "El festival se ha creado, pero no se ha podido guardar su portada.",
+          edit: "festival",
+        }),
+      );
+    }
+  }
+
   await revalidateFestivalPaths({
     festivalId: createdFestival.id,
     festivalSlug: createdFestival.slug,
@@ -229,11 +315,29 @@ export async function createEditionAction(formData: FormData) {
   }
 
   const supabase = await createSupabaseServerClient();
-  const { data: festival, error: festivalError } = await supabase
+  const primaryFestival = await supabase
     .from("festivals")
-    .select("id,slug,default_timezone")
+    .select(
+      "id,slug,default_timezone,cover_media:media_assets!festivals_cover_media_id_fkey(id,bucket_name,storage_path,file_name,mime_type,size_bytes,width,height,alt_text)",
+    )
     .eq("id", festivalId)
     .maybeSingle();
+
+  let festival = primaryFestival.data;
+  let festivalError = primaryFestival.error;
+
+  if (isMissingMediaSchemaError(primaryFestival.error)) {
+    const fallbackFestival = await supabase
+      .from("festivals")
+      .select("id,slug,default_timezone")
+      .eq("id", festivalId)
+      .maybeSingle();
+
+    festival = fallbackFestival.data
+      ? ({ ...fallbackFestival.data, cover_media: null } as unknown as typeof primaryFestival.data)
+      : fallbackFestival.data;
+    festivalError = fallbackFestival.error;
+  }
 
   if (festivalError || !festival) {
     redirect(buildNewEditionUrl(festivalId, { error: "No se pudo cargar el festival para crear la edicion." }));
@@ -331,6 +435,57 @@ export async function createEditionAction(formData: FormData) {
     );
   }
 
+  const mediaChange = await saveEntityCoverMedia({
+    ownerType: "edition",
+    ownerId: createdEdition.id,
+    currentAsset: null,
+    fileEntry: formData.get("cover_image"),
+    altTextEntry: formData.get("cover_image_alt_text"),
+    widthEntry: formData.get("cover_image_width"),
+    heightEntry: formData.get("cover_image_height"),
+    removeEntry: formData.get("remove_cover_image"),
+  });
+
+  if (mediaChange.error) {
+    await revalidateFestivalPaths({
+      festivalId,
+      festivalSlug: festival.slug,
+      editions: [{ id: createdEdition.id, slug: createdEdition.slug }],
+    });
+
+    revalidatePath(`/cms/ediciones/${createdEdition.id}`);
+    revalidatePath(`/cms/ediciones/${createdEdition.id}/actos`);
+
+    redirect(
+      buildEditionUrlForCreation(createdEdition.id, {
+        created: "1",
+        error: mediaChange.error,
+        edit: "edition",
+      }),
+    );
+  }
+
+  if (mediaChange.coverMediaId !== undefined) {
+    const { error: coverUpdateError } = await supabase
+      .from("editions")
+      .update({ cover_media_id: mediaChange.coverMediaId })
+      .eq("id", createdEdition.id);
+
+    if (coverUpdateError) {
+      if (mediaChange.cleanupOnFailureMediaId) {
+        await deleteMediaAsset(mediaChange.cleanupOnFailureMediaId);
+      }
+
+      redirect(
+        buildEditionUrlForCreation(createdEdition.id, {
+          created: "1",
+          error: "La edicion se ha creado, pero no se ha podido guardar su portada.",
+          edit: "edition",
+        }),
+      );
+    }
+  }
+
   const { data: editions } = await supabase
     .from("editions")
     .select("id,slug")
@@ -346,4 +501,11 @@ export async function createEditionAction(formData: FormData) {
   revalidatePath(`/cms/ediciones/${createdEdition.id}/actos`);
 
   redirect(`/cms/ediciones/${createdEdition.id}?created=1`);
+}
+
+function buildEditionUrlForCreation(editionId: string, params?: Record<string, string>) {
+  const query = new URLSearchParams(params);
+  const suffix = query.toString();
+
+  return suffix ? `/cms/ediciones/${editionId}?${suffix}` : `/cms/ediciones/${editionId}`;
 }

@@ -1,7 +1,15 @@
 import Link from "next/link";
 
+import {
+  PublicEntityMedia,
+  PublicHeroBlock,
+  PublicInfoPanel,
+  PublicMetaRow,
+} from "@/components/public/public-editorial";
 import { PublicEditionNav } from "@/components/public/public-edition-nav";
 import { SectionCard } from "@/components/shared/section-card";
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { getPublicEventDetailData } from "@/lib/public/queries";
 
 type EventDetailPageProps = {
@@ -27,16 +35,14 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
   if (error) {
     return (
       <SectionCard
+        variant="editorial"
         eyebrow="Error"
         title="No se ha podido cargar el acto"
-        description="El detalle publico read-only ya usa Supabase real y esta carga ha fallado."
+        description="El detalle publico read-only ya usa Supabase real."
       >
-        <div className="space-y-4 text-sm text-stone-600">
+        <div className="space-y-4 text-sm text-[var(--muted)]">
           <p>{error}</p>
-          <Link
-            href={agendaHref}
-            className="inline-flex font-semibold text-[#9b2c16] underline-offset-4 hover:underline"
-          >
+          <Link href={agendaHref} className={buttonVariants({ variant: "link" })}>
             Volver a agenda
           </Link>
         </div>
@@ -47,14 +53,12 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
   if (!event) {
     return (
       <SectionCard
+        variant="editorial"
         eyebrow="No disponible"
         title="No encontramos ese acto"
         description="Comprueba el enlace o revisa que el acto siga publicado dentro de esta edicion."
       >
-        <Link
-          href={agendaHref}
-          className="inline-flex text-sm font-semibold text-[#9b2c16] underline-offset-4 hover:underline"
-        >
+        <Link href={agendaHref} className={buttonVariants({ variant: "link" })}>
           Volver a agenda
         </Link>
       </SectionCard>
@@ -64,115 +68,126 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
   const isChangeRelevant = event.status === "updated" || event.status === "cancelled";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PublicEditionNav
         festivalSlug={event.festivalSlug}
         editionSlug={event.editionSlug}
         current="agenda"
       />
 
-      <div>
-        <Link
-          href={`/${event.festivalSlug}/${event.editionSlug}/agenda`}
-          className="text-sm font-semibold text-[#9b2c16] underline-offset-4 hover:underline"
-        >
-          Volver a agenda
-        </Link>
-      </div>
-
-      <SectionCard
+      <PublicHeroBlock
         eyebrow="Acto"
         title={event.title}
         description={`${event.festivalName} / ${event.editionName}`}
-      >
-        <div className="space-y-5">
+        media={
+          <PublicEntityMedia
+            asset={event.coverMedia}
+            tone="stone"
+            badge={event.statusLabel ?? "Acto"}
+            subtitle={event.festivalCity ?? event.festivalName}
+            title={event.title}
+            className="min-h-[20rem] sm:min-h-[24rem]"
+            priority
+          />
+        }
+        meta={
+          <PublicMetaRow
+            items={[
+              event.startsAtDateLabel,
+              event.startsAtTimeLabel,
+              event.locationName ?? event.locationStatusLabel,
+              event.editionDateRangeLabel,
+            ]}
+          />
+        }
+        actions={
+          <Link href={agendaHref} className={buttonVariants({ variant: "outline" })}>
+            Volver a agenda
+          </Link>
+        }
+        aside={
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-[#fff3e6] px-3 py-1.5 text-sm text-stone-700">
-              {event.startsAtDayLabel}
-            </span>
-            {event.statusLabel ? (
-              <span className="rounded-full bg-[#9b2c16] px-3 py-1.5 text-sm font-medium text-white">
-                {event.statusLabel}
-              </span>
+            {event.statusLabel ? <Badge variant={isChangeRelevant ? "accent" : "soft"}>{event.statusLabel}</Badge> : null}
+            {event.mapsUrl ? (
+              <a
+                href={event.mapsUrl}
+                target="_blank"
+                rel="noreferrer"
+                className={buttonVariants({ variant: "accent" })}
+              >
+                Abrir en mapas
+              </a>
             ) : null}
           </div>
+        }
+      />
 
-          {isChangeRelevant && event.statusLabel ? (
-            <section className="rounded-3xl border border-[#9b2c16]/15 bg-[#fff5ef] p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#8c2b15]">
-                Cambio relevante
-              </p>
-              <p className="mt-2 text-base font-semibold text-stone-900">{event.statusLabel}</p>
-              {event.statusNote ? (
-                <p className="mt-1 text-sm leading-6 text-stone-700">{event.statusNote}</p>
-              ) : null}
-            </section>
+      {isChangeRelevant && event.statusLabel ? (
+        <SectionCard
+          variant="soft"
+          title="Cambio relevante"
+          description="Este acto muestra una actualizacion visible para el publico."
+          contentClassName="space-y-3"
+        >
+          <Badge variant="accent">{event.statusLabel}</Badge>
+          {event.statusNote ? (
+            <p className="text-sm leading-6 text-[var(--foreground)]">{event.statusNote}</p>
           ) : null}
+        </SectionCard>
+      ) : null}
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <section className="rounded-3xl bg-[#fff9f3] p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-                Fecha y hora
-              </p>
-              <p className="mt-3 text-base font-semibold text-stone-900">
-                {event.startsAtDateLabel}
-              </p>
-              <p className="mt-2 text-3xl font-semibold leading-none text-stone-950">
-                {event.startsAtTimeLabel}
-              </p>
-            </section>
+      <div className="grid gap-5 md:grid-cols-2">
+        <PublicInfoPanel
+          label="Fecha y hora"
+          value={
+            <div className="space-y-2">
+              <p className="font-serif text-3xl leading-none tracking-[-0.02em]">{event.startsAtDateLabel}</p>
+              <p className="text-lg text-[var(--muted)]">{event.startsAtTimeLabel}</p>
+            </div>
+          }
+        />
 
-            <section className="rounded-3xl bg-[#fff9f3] p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-                Ubicacion
+        <PublicInfoPanel
+          label="Ubicacion"
+          value={
+            <div className="space-y-2">
+              <p className="font-serif text-3xl leading-none tracking-[-0.02em]">
+                {event.locationName ?? event.locationStatusLabel}
               </p>
-              {event.locationName ? (
-                <>
-                  <p className="mt-3 text-base font-semibold text-stone-900">
-                    {event.locationName}
-                  </p>
-                  <p className="mt-1 text-sm leading-6 text-stone-600">
-                    {event.locationAddress ?? "Direccion no publicada todavia."}
-                  </p>
-                  {event.mapsUrl ? (
-                    <a
-                      href={event.mapsUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-4 inline-flex rounded-full bg-[#9b2c16] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#7f200f]"
-                    >
-                      Abrir en mapas
-                    </a>
-                  ) : null}
-                </>
-              ) : (
-                <p className="mt-3 text-base font-semibold text-stone-900">
-                  {event.locationStatusLabel}
-                </p>
-              )}
-            </section>
-          </div>
+              {event.locationAddress ? <p className="text-sm text-[var(--muted)]">{event.locationAddress}</p> : null}
+            </div>
+          }
+          description={!event.locationName ? "La ubicacion todavia no puede mostrarse con mas detalle." : undefined}
+        />
+      </div>
 
-          {event.statusLabel && !isChangeRelevant ? (
-            <section className="rounded-3xl border border-black/8 bg-white p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-                Estado visible
-              </p>
-              <p className="mt-2 text-base font-semibold text-stone-900">{event.statusLabel}</p>
-              {event.statusNote ? (
-                <p className="mt-1 text-sm leading-6 text-stone-600">{event.statusNote}</p>
-              ) : null}
-            </section>
-          ) : null}
+      <SectionCard
+        variant="editorial"
+        title="Detalle del acto"
+        description="Contexto y descripcion publica."
+        contentClassName="space-y-5"
+      >
+        {event.shortDescription ? (
+          <blockquote className="border-l-2 border-[color:var(--accent-soft)] pl-5 font-serif text-xl leading-8 text-[var(--muted)] italic">
+            {event.shortDescription}
+          </blockquote>
+        ) : null}
 
-          {event.shortDescription ? (
-            <section className="rounded-3xl border border-black/8 bg-white p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-                Descripcion breve
-              </p>
-              <p className="mt-2 text-sm leading-6 text-stone-700">{event.shortDescription}</p>
-            </section>
-          ) : null}
+        {!isChangeRelevant && event.statusLabel && event.statusNote ? (
+          <PublicInfoPanel
+            label="Estado visible"
+            value={event.statusLabel}
+            description={event.statusNote}
+          />
+        ) : null}
+
+        <div className="flex flex-wrap gap-3 text-sm">
+          <Link href={`/${event.festivalSlug}/${event.editionSlug}`} className={buttonVariants({ variant: "link" })}>
+            Ver resumen de la edicion
+          </Link>
+          <Link href={agendaHref} className={buttonVariants({ variant: "link" })}>
+            Ver agenda completa
+          </Link>
         </div>
       </SectionCard>
     </div>

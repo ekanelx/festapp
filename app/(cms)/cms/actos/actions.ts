@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireCmsSession } from "@/lib/cms/auth";
+import { deleteMediaAsset, saveEntityCoverMedia } from "@/lib/media/server";
+import { isMissingMediaSchemaError, resolveMediaAsset } from "@/lib/media/utils";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const EVENT_STATUS_VALUES = new Set(["scheduled", "updated", "cancelled", "finished"]);
@@ -191,6 +193,43 @@ export async function createCmsEventAction(formData: FormData) {
     redirect(buildCreateUrl(editionId, { error: message }));
   }
 
+  const mediaChange = await saveEntityCoverMedia({
+    ownerType: "event",
+    ownerId: createdEvent.id,
+    currentAsset: null,
+    fileEntry: formData.get("cover_image"),
+    altTextEntry: formData.get("cover_image_alt_text"),
+    widthEntry: formData.get("cover_image_width"),
+    heightEntry: formData.get("cover_image_height"),
+    removeEntry: formData.get("remove_cover_image"),
+  });
+
+  if (mediaChange.error) {
+    revalidatePath(`/cms/actos/${createdEvent.id}`);
+
+    redirect(buildEditorUrl(createdEvent.id, { created: "1", error: mediaChange.error }));
+  }
+
+  if (mediaChange.coverMediaId !== undefined) {
+    const { error: coverUpdateError } = await supabase
+      .from("events")
+      .update({ cover_media_id: mediaChange.coverMediaId })
+      .eq("id", createdEvent.id);
+
+    if (coverUpdateError) {
+      if (mediaChange.cleanupOnFailureMediaId) {
+        await deleteMediaAsset(mediaChange.cleanupOnFailureMediaId);
+      }
+
+      redirect(
+        buildEditorUrl(createdEvent.id, {
+          created: "1",
+          error: "El acto se ha creado, pero no se ha podido guardar su portada.",
+        }),
+      );
+    }
+  }
+
   revalidatePath("/cms");
   revalidatePath("/cms/festivales");
   revalidatePath("/cms/ediciones");
@@ -220,11 +259,29 @@ export async function updateCmsEventAction(formData: FormData) {
   }
 
   const supabase = await createSupabaseServerClient();
-  const { data: currentEvent, error: currentEventError } = await supabase
+  const primaryEvent = await supabase
     .from("events")
-    .select("id,slug,published_at,edition:editions!inner(id,slug,timezone,festival:festivals!inner(id,slug))")
+    .select(
+      "id,slug,published_at,cover_media:media_assets!events_cover_media_id_fkey(id,bucket_name,storage_path,file_name,mime_type,size_bytes,width,height,alt_text),edition:editions!inner(id,slug,timezone,festival:festivals!inner(id,slug))",
+    )
     .eq("id", eventId)
     .maybeSingle();
+
+  let currentEvent = primaryEvent.data;
+  let currentEventError = primaryEvent.error;
+
+  if (isMissingMediaSchemaError(primaryEvent.error)) {
+    const fallbackEvent = await supabase
+      .from("events")
+      .select("id,slug,published_at,edition:editions!inner(id,slug,timezone,festival:festivals!inner(id,slug))")
+      .eq("id", eventId)
+      .maybeSingle();
+
+    currentEvent = fallbackEvent.data
+      ? ({ ...fallbackEvent.data, cover_media: null } as unknown as typeof primaryEvent.data)
+      : fallbackEvent.data;
+    currentEventError = fallbackEvent.error;
+  }
 
   if (currentEventError || !currentEvent) {
     redirect(buildEditorUrl(eventId, { error: "No se pudo cargar el acto para guardarlo." }));
@@ -277,6 +334,21 @@ export async function updateCmsEventAction(formData: FormData) {
     redirect(buildEditorUrl(eventId, { error: "No se ha podido interpretar la fecha y hora." }));
   }
 
+  const mediaChange = await saveEntityCoverMedia({
+    ownerType: "event",
+    ownerId: eventId,
+    currentAsset: resolveMediaAsset(currentEvent.cover_media),
+    fileEntry: formData.get("cover_image"),
+    altTextEntry: formData.get("cover_image_alt_text"),
+    widthEntry: formData.get("cover_image_width"),
+    heightEntry: formData.get("cover_image_height"),
+    removeEntry: formData.get("remove_cover_image"),
+  });
+
+  if (mediaChange.error) {
+    redirect(buildEditorUrl(eventId, { error: mediaChange.error }));
+  }
+
   const nextPublishedAt =
     reviewStatus === "published" ? currentEvent.published_at ?? new Date().toISOString() : null;
 
@@ -293,16 +365,25 @@ export async function updateCmsEventAction(formData: FormData) {
       location_id: locationPending ? null : locationId,
       location_pending: locationPending,
       published_at: nextPublishedAt,
+      ...(mediaChange.coverMediaId !== undefined ? { cover_media_id: mediaChange.coverMediaId } : {}),
     })
     .eq("id", eventId);
 
   if (updateError) {
+    if (mediaChange.cleanupOnFailureMediaId) {
+      await deleteMediaAsset(mediaChange.cleanupOnFailureMediaId);
+    }
+
     const message =
       updateError.code === "23505"
         ? "Ya existe otro acto con ese slug dentro de la misma edicion."
         : updateError.message;
 
     redirect(buildEditorUrl(eventId, { error: message }));
+  }
+
+  if (mediaChange.cleanupOnSuccessMediaId) {
+    await deleteMediaAsset(mediaChange.cleanupOnSuccessMediaId);
   }
 
   revalidatePath("/cms");

@@ -4,10 +4,12 @@ import { CmsBreadcrumbs } from "@/components/cms/cms-breadcrumbs";
 import { CmsPageHeader } from "@/components/cms/cms-page-header";
 import { Callout } from "@/components/shared/callout";
 import { CheckboxField, FormField } from "@/components/shared/form-field";
+import { FormSubmitButton } from "@/components/shared/form-submit-button";
 import { InfoTile } from "@/components/shared/info-tile";
+import { MediaImageField } from "@/components/shared/media-image-field";
 import { SectionCard } from "@/components/shared/section-card";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -162,7 +164,7 @@ export default async function CmsEventEditorPage({
           description="Organizada por bloques para crecer sin romper el flujo editorial."
           contentClassName="space-y-5"
         >
-          <form action={updateCmsEventAction} className="space-y-5">
+          <form action={updateCmsEventAction} className="space-y-5" encType="multipart/form-data">
             <input type="hidden" name="event_id" value={event.id} />
 
             <section className="space-y-4 rounded-[var(--radius-lg)] border border-[color:var(--border)] bg-[var(--surface-strong)] p-4">
@@ -259,10 +261,21 @@ export default async function CmsEventEditorPage({
               </div>
             </section>
 
+            <section className="space-y-4 rounded-[var(--radius-lg)] border border-[color:var(--border)] bg-[var(--surface-strong)] p-4">
+              <div>
+                <h2 className="text-base font-semibold text-[var(--foreground)]">Portada</h2>
+                <p className="text-sm text-[var(--muted)]">Imagen principal del acto en CMS y app publica.</p>
+              </div>
+
+              <MediaImageField
+                currentImage={event.coverMedia}
+                previewTitle={event.title}
+                emptyLabel="Este acto todavia no tiene portada."
+              />
+            </section>
+
             <div className="flex justify-end">
-              <Button type="submit" size="lg">
-                Guardar cambios
-              </Button>
+              <FormSubmitButton size="lg" idleLabel="Guardar cambios" pendingLabel="Guardando acto..." />
             </div>
           </form>
         </SectionCard>
